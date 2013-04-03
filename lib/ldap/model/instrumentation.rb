@@ -6,7 +6,7 @@ require 'active_support/core_ext/module/delegation'
 module LDAP::Model
   module Instrumentation
 
-    # LogSubscriber to log People request URLs and timings
+    # LogSubscriber to log LDAP request URLs and timings
     #
     # h/t https://gist.github.com/566725
     #
