@@ -34,6 +34,13 @@ module LDAP::Model
         info message, event.duration
       end
 
+      def connect(event)
+        message  = "Connecting to server specified by #{event.payload[:config]}"
+        message << " FAILED: #{event.payload[:exception].last}" if event.payload.key?(:exception)
+
+        info message, event.duration
+      end
+
       def info(message, duration)
         super("  \033[1;33mLDAP\033[0m: %s (%.1fms)" % [ message, duration ])
       end

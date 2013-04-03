@@ -24,6 +24,10 @@ module LDAP::Model
       end
     end
 
+    initializer 'ldap_model.connect' do
+      LDAP::Model::Base.establish_connection
+    end
+
     config.after_initialize do
       if defined?(Hirb)
         require 'ldap/model/hirb'

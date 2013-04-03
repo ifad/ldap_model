@@ -1,5 +1,6 @@
 require 'net/ldap'
 require 'active_support/notifications'
+require 'active_support/core_ext/class/attribute'
 
 require 'active_model/dirty'
 
@@ -11,6 +12,8 @@ module LDAP::Model
     include ActiveModel::Dirty
 
     Error = LDAP::Model::Error # :nodoc:
+
+    class_attribute :connection, :instance_reader => false, :instance_writer => false
 
     class << self
       delegate :logger, :logger=, :to => Instrumentation::LogSubscriber
@@ -29,17 +32,29 @@ module LDAP::Model
         (ENV['RAILS_ENV'] || ENV['RACK_ENV'] || 'development')
     end
 
-    def self.connection
-      @connection ||= Net::LDAP.new(
-        host:       config['hostname'],
-        port:       (config['port'] || 389).to_i,
-        encryption: nil,
-        auth:       {
-          method:   :simple,
-          username: config['username'],
-          password: config['password']
-        }
-      )
+    def self.establish_connection
+      return if self.connection
+
+      instrument(:connect, :config => config_path) do
+
+        self.connection = Net::LDAP.new(
+          base:       config['base'],
+          host:       config['hostname'],
+          port:       (config['port'] || 389).to_i,
+          encryption: nil,
+          auth:       {
+            method:   :simple,
+            username: config['username'],
+            password: config['password']
+          }
+        )
+
+        unless self.connection.bind
+          reason = connection.get_operation_result.message
+          raise Error, "LDAP bind to #{config['hostname']} failed: #{reason}"
+        end
+
+      end
     end
 
     def self.search(options)
@@ -131,8 +146,6 @@ module LDAP::Model
 
         super(attributes.keys)
       end
-
-      protected :connection
 
       protected
         def instrument(action, payload, &block)
