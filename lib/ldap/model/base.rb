@@ -1,8 +1,13 @@
 require 'net/ldap'
 require 'active_support/notifications'
+require 'ldap/model/instrumentation'
 
 module LDAP::Model
   class Base
+    class << self
+      delegate :logger, :logger=, :to => Instrumentation::LogSubscriber
+    end
+
     def self.config
       @config ||= YAML.load_file(config_path).fetch(env).freeze
     end
