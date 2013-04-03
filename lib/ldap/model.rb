@@ -6,8 +6,6 @@ if defined?(Rails)
   require 'ldap/model/railtie'
 end
 
-if defined?(::Hirb)
-  ::Hirb.add_dynamic_view('LDAP::Base', :helper => :auto_table) do |obj|
-    {:fields => obj.class.string_attributes}
-  end
+if defined?(Hirb)
+  require 'ldap/model/hirb'
 end

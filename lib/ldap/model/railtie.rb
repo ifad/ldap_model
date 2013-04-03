@@ -23,5 +23,11 @@ module LDAP::Model
         include LDAP::Model::Instrumentation::ControllerRuntime
       end
     end
+
+    config.after_initialize do
+      if defined?(Hirb)
+        require 'ldap/model/hirb'
+      end
+    end
   end
 end
