@@ -31,17 +31,7 @@ module LDAP::Model
       end
 
       def _setup_ldap_autosave_callback
-        after_validation :if => proc { self.errors.empty? } do
-          self.class.ldap_autosave.each do |attr|
-            next unless changed_attributes.key?(attr)
-
-            begin
-              ldap_entry.public_send("#{attr}=", self[attr])
-            rescue LDAP::Error => e
-              errors.add(attr, "was refused by Active Directory: #{e.message}")
-            end
-          end
-        end
+        after_validation :_autosave_ldap_attributes, :if => proc { self.errors.empty? }
       end
 
     module ModelMethods
@@ -53,6 +43,19 @@ module LDAP::Model
         @_ldap_entry = nil
         super
       end
+
+      protected
+        def _autosave_ldap_attributes
+          self.class.ldap_autosave.each do |attr|
+            next unless changed_attributes.key?(attr)
+            ldap_entry.public_send("#{attr}=", self[attr])
+          end
+
+          ldap_entry.save!
+
+        rescue LDAP::Error => e
+          errors.add(:ldap, "save failed: #{e.message}")
+        end
     end
 
   end

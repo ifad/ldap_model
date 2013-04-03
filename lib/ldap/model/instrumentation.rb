@@ -27,8 +27,7 @@ module LDAP::Model
         self.class.runtime += event.duration
 
         message  = " subject '#{event.payload[:dn]}'"
-        message << " update '#{event.payload[:attr]}'"
-        message << " '#{event.payload[:old_value]}' -> '#{event.payload[:new_value]}'"
+        message << " update #{event.payload[:changes].inspect}"
         message << " => #{event.payload[:success] ? 'SUCCESS' : 'FAILED'} " if event.payload.key?(:success)
         message << " (#{event.payload[:message]})" if event.payload.key?(:message)
 

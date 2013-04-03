@@ -1,11 +1,15 @@
 require 'net/ldap'
 require 'active_support/notifications'
 
+require 'active_model/dirty'
+
 require 'ldap/model/instrumentation'
 require 'ldap/model/error'
 
 module LDAP::Model
   class Base
+    include ActiveModel::Dirty
+
     Error = LDAP::Model::Error # :nodoc:
 
     class << self
@@ -71,18 +75,15 @@ module LDAP::Model
       end
     end
 
-    def self.update_attribute(dn, attr, old_value, new_value)
-      payload = {
-        :dn => dn, :attr => attr,
-        :old_value => loggable_attribute_value(attr, old_value),
-        :new_value => loggable_attribute_value(attr, new_value)
-      }
+    def self.modify(dn, changes)
+      instrument(:update, :dn => dn, :changes => loggable_changes(changes)) do |event|
+        # Build the operations array
+        operations = changes.inject([]) do |ops, (attr, (old, new))|
+          op = if old.nil? then :add elsif new.nil? then :delete else :replace end
+          ops << [op, attr, new]
+        end
 
-      instrument(:update, payload) do |event|
-        success = old_value.nil? ?
-          connection.add_attribute(dn, attr, new_value) :
-          connection.replace_attribute(dn, attr, new_value)
-
+        success = connection.modify(:dn => dn, :operations => operations)
         message = connection.get_operation_result.message
 
         event.update(:success => success, :message => message)
@@ -115,14 +116,20 @@ module LDAP::Model
 
       def define_attribute_methods(attributes)
         attributes.each do |method, args|
-          attribute, *options = args
+          attr, *options = args
 
-          define_method(method) { self[attribute] }
+          unless attr.in?(self.attributes)
+            raise Error, "unknown attribute #{attribute}"
+          end
 
-          define_method("#{method}=") do |value|
-            update_attribute(attribute, value)
-          end if options.include?(:readwrite)
+          # Reader
+          define_method(method) { self[attr] }
+
+          # Writer
+          define_method("#{method}=") {|val| self[attr] = val} if options.include?(:readwrite)
         end
+
+        super(attributes.keys)
       end
 
       protected :connection
@@ -132,13 +139,18 @@ module LDAP::Model
           ActiveSupport::Notifications.instrument("#{action}.ldap", payload, &block)
         end
 
-        def loggable_attribute_value(attribute, value)
-          attribute.in?(binary_attributes) ?
-            "[BINARY SHA:#{Digest::SHA1.hexdigest(value)}]" : value
+        def loggable_changes(changes)
+          changes.inject({}) do |ret, (attr, change)|
+            if attr.in?(binary_attributes)
+              change = change.map {|x| x.present? ? "[BINARY SHA:#{Digest::SHA1.hexdigest(x)}]" : ''}
+            end
+
+            ret.update(attr => change)
+          end
         end
     end
 
-    attr_reader :attributes, :dn
+    attr_reader :dn
 
     def initialize(entry)
       initialize_from(entry)
@@ -157,14 +169,57 @@ module LDAP::Model
           v.force_encoding(attr.in?(self.class.binary_attributes) ? 'binary' : 'utf-8')
         end
 
-        h.update(attr => value.size < 2 ? value.first.to_s.presence : value)
-      end.freeze
+        h.update(attr => value.size < 2 ? value.first : value)
+      end
+
+      @changed_attributes.try(:clear)
     end
     protected :initialize_from
 
-    def [](name)
-      attributes.fetch(name)
+    def attributes
+      @attributes.dup
     end
+
+    def save!
+      return true unless changed?
+
+      @previously_changed = changes
+      success, message = self.class.modify(dn, changes)
+
+      if success
+        @changed_attributes.clear
+        true
+      else
+        raise Error, "Save failed: #{message}"
+      end
+    end
+
+    def save
+      save! rescue false
+    end
+
+    def [](attr)
+      @attributes.fetch(attr)
+    end
+
+    def []=(attr, value)
+      if value.present?
+        value = value.to_s
+
+        if attr.in?(self.class.binary_attributes)
+          value = value.force_encoding('binary')
+        end
+      else
+        value = nil
+      end
+
+      if value != self[attr]
+        public_send "#{attr}_will_change!"
+        @attributes[attr] = value
+      end
+    end
+
+    protected :[], :[]=
 
     def inspect
       attrs = self.class.string_attributes.inject([]) {|l,a| l << [a, self[a].inspect].join(': ')}
@@ -187,26 +242,6 @@ module LDAP::Model
       attrs -= Array.wrap(options[:except]).map(&:to_s) if options.key?(:except)
 
       to_hash(attrs)
-    end
-
-    def update_attribute(attr, value)
-      unless attr.in?(self.class.attributes)
-        raise Error, "unknown attribute #{attr}"
-      end
-
-      value = value.to_s
-      if attr.in?(self.class.binary_attributes)
-        value = value.force_encoding('binary')
-      end
-
-      success, message =
-        self.class.update_attribute(self.dn, attr, self[attr], value)
-
-      if success
-        return true
-      else
-        raise Error, message
-      end
     end
 
     protected
