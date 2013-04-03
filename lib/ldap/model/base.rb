@@ -1,9 +1,13 @@
 require 'net/ldap'
 require 'active_support/notifications'
+
 require 'ldap/model/instrumentation'
+require 'ldap/model/error'
 
 module LDAP::Model
   class Base
+    Error = LDAP::Model::Error # :nodoc:
+
     class << self
       delegate :logger, :logger=, :to => Instrumentation::LogSubscriber
     end
