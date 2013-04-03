@@ -41,7 +41,7 @@ module LDAP::Model
           base:       config['base'],
           host:       config['hostname'],
           port:       (config['port'] || 389).to_i,
-          encryption: nil,
+          encryption: config['encryption'],
           auth:       {
             method:   :simple,
             username: config['username'],
