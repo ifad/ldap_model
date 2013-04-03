@@ -57,6 +57,12 @@ module LDAP::Model
       end
     end
 
+    def self.all
+      base.inject([]) do |result, dn|
+        result.concat(search(base: dn).map {|entry| new(entry)})
+      end
+    end
+
     def self.search(options)
       options[:scope]      ||= scope
       options[:attributes] ||= attributes
@@ -127,6 +133,10 @@ module LDAP::Model
 
       def scope(type = nil)
         @scope ||= type
+      end
+
+      def base(base = nil)
+        @base ||= Array.wrap(base)
       end
 
       def define_attribute_methods(attributes)
