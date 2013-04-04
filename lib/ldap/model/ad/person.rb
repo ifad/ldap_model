@@ -14,11 +14,14 @@ module LDAP::Model
     computed_attributes %w[
       active?
       extension
-      expiration
+      created_at
+      updated_at
+      expires_at
       valid_password?
       locked_out?
       disabled?
-      password_expiration
+      password_expires_at
+      password_changed_at
     ]
 
     class << self
@@ -55,8 +58,8 @@ module LDAP::Model
     delegate :min_password_length, :password_history_length,
       :password_properties, :to => :root
 
-    def expiration
-      AD.at(self['accountExpires'].to_i).to_date
+    def expires_at
+      AD.at(self['accountExpires'].to_i)
     end
 
     def active?
@@ -67,8 +70,8 @@ module LDAP::Model
       !password_expires? || password_expired?
     end
 
-    def password_expiration
-      password_last_set + root.max_password_age
+    def password_expires_at
+      password_changed_at + root.max_password_age
     end
 
     def created_at
@@ -99,7 +102,7 @@ module LDAP::Model
       account_flags & ADS_UF_PASSWD_CANT_CHANGE == 0
     end
 
-    def password_last_set
+    def password_changed_at
       return if self['pwdLastSet'] == '0' # Must change
       AD.at(self['pwdLastSet'].to_i)
     end
