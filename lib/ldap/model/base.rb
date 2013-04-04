@@ -33,7 +33,7 @@ module LDAP::Model
     class << self
       def connection
         establish_connection unless connected?
-        @connection
+        @@connection
       end
       protected :connection
     end
@@ -43,7 +43,7 @@ module LDAP::Model
 
       instrument(:connect, :config => config_path) do
 
-        @connection = Net::LDAP.new(
+        @@connection = Net::LDAP.new(
           base:       config['base'],
           host:       config['hostname'],
           port:       (config['port'] || 389).to_i,
@@ -55,8 +55,8 @@ module LDAP::Model
           }
         )
 
-        unless @connection.bind
-          reason = @connection.get_operation_result.message
+        unless @@connection.bind
+          reason = @@connection.get_operation_result.message
           raise Error, "LDAP bind to #{config['hostname']} failed: #{reason}"
         end
 
@@ -66,7 +66,7 @@ module LDAP::Model
     end
 
     def self.connected?
-      !@connection.nil?
+      defined?(@@connection)
     end
 
     def self.all
