@@ -83,9 +83,7 @@ module LDAP::Model
     end
 
     def self.find(dn, options = {})
-      cn, base = dn.split(',', 2)
-
-      find_one(options.merge(base: base, filter: Net::LDAP::Filter.construct(cn)))
+      find_one(options.merge(base: dn, scope: Net::LDAP::SearchScope_BaseObject))
     end
 
     def self.find_one(options)
