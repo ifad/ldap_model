@@ -26,21 +26,21 @@ module LDAP::Model
       end
 
       def filter_only_person
-	Net::LDAP::Filter.eq('objectClass', 'person')
+        Net::LDAP::Filter.eq('objectClass', 'person')
       end
 
       def filter_active_person
-	Net::LDAP::Filter.ge('accountExpires', AD.now.to_s)
+        Net::LDAP::Filter.ge('accountExpires', AD.now.to_s)
       end
 
       # Find by sAMAccountName
       #
       def find_by_account(account_name)
-	base.each do |branch|
-	  result = find_one(base: branch, filter: Net::LDAP::Filter.eq('sAMAccountName', account_name))
-	  return result if result
-	end
-	nil
+        base.each do |branch|
+          result = find_one(base: branch, filter: Net::LDAP::Filter.eq('sAMAccountName', account_name))
+          return result if result
+        end
+        nil
       end
 
     end
