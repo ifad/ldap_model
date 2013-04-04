@@ -5,6 +5,8 @@ module LDAP::Model
       accountExpires
       pwdLastSet
       userAccountControl
+      badPwdCount
+      badPasswordTime
     ]
 
     computed_attributes %w[
@@ -77,6 +79,14 @@ module LDAP::Model
 
     def account_flags
       self['userAccountControl'].to_i
+    end
+
+    def failed_login_attempts
+      self['badPwdCount'].to_i
+    end
+
+    def last_failed_login
+      AD.at(self['badPasswordTime'].to_i)
     end
 
     # AD Constants
