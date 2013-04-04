@@ -7,6 +7,8 @@ module LDAP::Model
       userAccountControl
       badPwdCount
       badPasswordTime
+      whenCreated
+      whenChanged
     ]
 
     computed_attributes %w[
@@ -67,6 +69,14 @@ module LDAP::Model
 
     def password_expiration
       password_last_set + root.max_password_age
+    end
+
+    def created_at
+      AD.asn1_at(self['whenCreated'])
+    end
+
+    def updated_at
+      AD.asn1_at(self['whenChanged'])
     end
 
     def locked_out?

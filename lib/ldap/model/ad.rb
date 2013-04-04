@@ -28,6 +28,13 @@ module LDAP::Model
       utc.at(timestamp / INTERVAL_SEC_RATIO + EPOCH_OFFSET).localtime
     end
 
+    # http://msdn.microsoft.com/en-us/library/windows/desktop/ms684436(v=vs.85).aspx
+    def self.asn1_at(string)
+      if match = string.match(/(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})\.0Z/)
+        Time.utc(*match.captures.map(&:to_i)).localtime
+      end
+    end
+
     def self.utc
       @utc ||= Time.find_zone('UTC')
     end
