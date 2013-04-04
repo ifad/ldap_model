@@ -155,6 +155,8 @@ module LDAP::Model
       end
 
       def define_attribute_methods(attributes)
+        mutable = []
+
         attributes.each do |method, args|
           attr, *options = args
 
@@ -166,10 +168,13 @@ module LDAP::Model
           define_method(method) { self[attr] }
 
           # Writer
-          define_method("#{method}=") {|val| self[attr] = val} if options.include?(:readwrite)
+          if options.include?(:readwrite)
+            define_method("#{method}=") {|val| self[attr] = val}
+            mutable.push method
+          end
         end
 
-        super(attributes.keys)
+        super(mutable)
       end
 
       protected
