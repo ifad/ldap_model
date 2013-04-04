@@ -16,9 +16,14 @@ module LDAP::Model
       valid_password?
       locked_out?
       disabled?
+      password_expiration
     ]
 
     class << self
+
+      def root
+        AD::Root.find
+      end
 
       def filter_only_person
 	Net::LDAP::Filter.eq('objectClass', 'person')
@@ -50,6 +55,10 @@ module LDAP::Model
 
     def valid_password?
       !password_expires? || password_expired?
+    end
+
+    def password_expiration
+      password_last_set + self.class.root.max_password_age
     end
 
     def locked_out?
