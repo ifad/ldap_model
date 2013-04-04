@@ -86,7 +86,9 @@ module LDAP::Model
       end
 
       instrument(:search, options) do |event|
-        connection.search(options).tap {|result| event.update(:results => result.size)}
+        (connection.search(options) || []).tap do |result|
+          event.update(:results => result.size)
+        end
       end
     end
 
