@@ -45,6 +45,14 @@ module LDAP::Model
 
     end
 
+    # AD Root settings
+    def root
+      @root ||= self.class.root
+    end
+
+    delegate :min_password_length, :password_history_length,
+      :password_properties, :to => :root
+
     def expiration
       AD.at(self['accountExpires'].to_i).to_date
     end
@@ -58,7 +66,7 @@ module LDAP::Model
     end
 
     def password_expiration
-      password_last_set + self.class.root.max_password_age
+      password_last_set + root.max_password_age
     end
 
     def locked_out?
