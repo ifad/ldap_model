@@ -69,9 +69,9 @@ module LDAP::Model
       defined?(@@connection)
     end
 
-    def self.all
+    def self.all(options = {})
       base.inject([]) do |result, dn|
-        result.concat(search(base: dn).map {|entry| new(entry)})
+        result.concat(search(options.merge(base: dn)).map {|entry| new(entry)})
       end
     end
 

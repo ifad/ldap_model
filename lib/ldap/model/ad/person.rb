@@ -48,6 +48,10 @@ module LDAP::Model
         nil
       end
 
+      def active
+        all(filter: filter_active_person)
+      end
+
     end
 
     # AD Root settings
