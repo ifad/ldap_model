@@ -63,7 +63,7 @@ module LDAP::Model
     end
 
     def active?
-      expiration.future?
+      expires_at.future?
     end
 
     def valid_password?

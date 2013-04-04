@@ -161,7 +161,7 @@ module LDAP::Model
           attr, *options = args
 
           unless attr.in?(self.attributes)
-            raise Error, "unknown attribute #{attribute}"
+            raise Error, "unknown attribute #{attr}"
           end
 
           # Reader
