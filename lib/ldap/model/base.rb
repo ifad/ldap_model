@@ -128,19 +128,22 @@ module LDAP::Model
     class << self
       # Minimal DSL
       %w( string binary computed ).each do |type|
-        module_eval <<-RUBY
+        module_eval <<-RUBY, __FILE__, __LINE__+1
           def #{type}_attributes(list=nil)
-            @#{type}_attributes ||= (list.present? ? list.to_set.freeze : [])
+            @#{type}_attributes ||= superclass.respond_to?(:#{type}_attributes) ?
+              superclass.#{type}_attributes : Set.new
+            @#{type}_attributes |= list.to_set if list.present?
+            @#{type}_attributes
           end
         RUBY
       end
 
       def attributes
-        @attributes ||= (string_attributes | binary_attributes).freeze
+        @attributes ||= (string_attributes | binary_attributes)
       end
 
       def export_attributes
-        @export_attributes ||= (attributes | computed_attributes).freeze
+        @export_attributes ||= (attributes | computed_attributes)
       end
 
       def scope(type = nil)
