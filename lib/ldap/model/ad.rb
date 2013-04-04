@@ -3,6 +3,8 @@ require 'active_support/core_ext/time/zones'
 module LDAP::Model
   module AD
 
+    autoload :Person, 'ldap/model/ad/person'
+
     # Difference in seconds between the UNIX Epoch (1970-01-01)
     # and the Active Directory Epoch (1601-01-01)
     EPOCH_OFFSET = Time.utc(1601).to_i
