@@ -1,6 +1,8 @@
 module LDAP::Model
   module ActiveRecord
 
+    Error = LDAP::Model::Error
+
     def ldap_backing(model, options = {})
       include ModelMethods
 
@@ -53,7 +55,7 @@ module LDAP::Model
 
           ldap_entry.save!
 
-        rescue LDAP::Error => e
+        rescue Error => e
           errors.add(:ldap, "save failed: #{e.message}")
         end
     end
