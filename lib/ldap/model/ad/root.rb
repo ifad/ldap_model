@@ -38,22 +38,65 @@ module LDAP::Model
       # complexity and storage restrictions.
       #
       'pwdProperties',
+
+      # http://msdn.microsoft.com/en-us/library/windows/desktop/ms676840(v=vs.85).aspx
+      #
+      # The amount of time that an account is locked due to the
+      # Lockout-Threshold being exceeded. This value is stored as a large
+      # integer that represents the negative of the number of 100-nanosecond
+      # intervals from the time the Lockout-Threshold is exceeded that must
+      # elapse before the account is unlocked.
+      #
+      'lockoutDuration',
+
+      # http://msdn.microsoft.com/en-us/library/windows/desktop/ms676842(v=vs.85).aspx
+      #
+      # The number of invalid logon attempts that are permitted before the
+      # account is locked out.
+      #
+      'lockoutThreshold',
+
+      # http://msdn.microsoft.com/en-us/library/windows/desktop/ms676841(v=vs.85).aspx
+      #
+      # The range of time in which the system increments the incorrect logon
+      # count.
+      #
+      'lockOutObservationWindow',
     ]
 
     def self.find
       super(base.first)
     end
 
+    # Returns the account lockout duration in seconds
+    #
+    def lockout_duration
+      AD.interval(self['lockoutDuration'])
+    end
+
+    # Returns the amount of failed logins before an account is locked out
+    #
+    def lockout_threshold
+      self['lockoutThreshold'].to_i
+    end
+
+    # Returns the time range in seconds in which the system increments the
+    # incorrect logon count
+    #
+    def lockout_observation_window
+      AD.interval(self['lockOutObservationWindow'])
+    end
+
     # Returns the maximum password age in seconds
     #
     def max_password_age
-      self['maxPwdAge'].to_i / AD::INTERVAL_SEC_RATIO
+      AD.interval(self['maxPwdAge'])
     end
 
     # Returns the minimum password age in seconds
     #
     def min_password_age
-      self['minPwdAge'].to_i / AD::INTERVAL_SEC_RATIO
+      AD.interval(self['minPwdAge'])
     end
 
     # Returns the minimum password length

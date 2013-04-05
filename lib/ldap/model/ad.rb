@@ -35,6 +35,11 @@ module LDAP::Model
       end
     end
 
+    # http://msdn.microsoft.com/en-us/library/windows/desktop/ms684426(v=vs.85).aspx
+    def self.interval(int_str)
+      -(int_str.to_i / INTERVAL_SEC_RATIO).to_i
+    end
+
     def self.utc
       @utc ||= Time.find_zone('UTC')
     end

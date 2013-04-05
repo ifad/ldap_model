@@ -9,6 +9,7 @@ module LDAP::Model
       badPasswordTime
       whenCreated
       whenChanged
+      lockoutTime
     ]
 
     computed_attributes %w[
@@ -109,6 +110,11 @@ module LDAP::Model
     def password_changed_at
       return if self['pwdLastSet'] == '0' # Must change
       AD.at(self['pwdLastSet'].to_i)
+    end
+
+    def locked_out_at
+      return if self['lockoutTime'] == '0' # Not Locked Out
+      AD.at(self['lockoutTime'].to_i)
     end
 
     def account_flags
