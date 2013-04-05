@@ -10,6 +10,7 @@ module LDAP::Model
       whenCreated
       whenChanged
       lockoutTime
+      userPrincipalName
     ]
 
     computed_attributes %w[
@@ -62,6 +63,10 @@ module LDAP::Model
 
     delegate :min_password_length, :password_history_length,
       :password_properties, :to => :root
+
+    def principal
+      self['userPrincipalName']
+    end
 
     def expires_at
       AD.at(self['accountExpires'].to_i)
