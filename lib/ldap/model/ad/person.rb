@@ -69,7 +69,7 @@ module LDAP::Model
     end
 
     def expires_at
-      AD.at(self['accountExpires'].to_i)
+      AD.interval_to_time(self['accountExpires'])
     end
 
     def active?
@@ -85,11 +85,11 @@ module LDAP::Model
     end
 
     def created_at
-      AD.asn1_at(self['whenCreated'])
+      AD.asn1_to_time(self['whenCreated'])
     end
 
     def updated_at
-      AD.asn1_at(self['whenChanged'])
+      AD.asn1_to_time(self['whenChanged'])
     end
 
     def locked_out?
@@ -114,12 +114,12 @@ module LDAP::Model
 
     def password_changed_at
       return if self['pwdLastSet'] == '0' # Must change
-      AD.at(self['pwdLastSet'].to_i)
+      AD.interval_to_time(self['pwdLastSet'])
     end
 
     def locked_out_at
       return if self['lockoutTime'] == '0' # Not Locked Out
-      AD.at(self['lockoutTime'].to_i)
+      AD.interval_to_time(self['lockoutTime'])
     end
 
     def account_flags
@@ -131,7 +131,7 @@ module LDAP::Model
     end
 
     def last_failed_login
-      AD.at(self['badPasswordTime'].to_i)
+      AD.interval_to_time(self['badPasswordTime'])
     end
 
     # AD Constants

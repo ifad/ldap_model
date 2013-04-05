@@ -71,7 +71,7 @@ module LDAP::Model
     # Returns the account lockout duration in seconds
     #
     def lockout_duration
-      AD.interval(self['lockoutDuration'])
+      AD.interval_to_secs(self['lockoutDuration'])
     end
 
     # Returns the amount of failed logins before an account is locked out
@@ -84,19 +84,19 @@ module LDAP::Model
     # incorrect logon count
     #
     def lockout_observation_window
-      AD.interval(self['lockOutObservationWindow'])
+      AD.interval_to_secs(self['lockOutObservationWindow'])
     end
 
     # Returns the maximum password age in seconds
     #
     def max_password_age
-      AD.interval(self['maxPwdAge'])
+      AD.interval_to_secs(self['maxPwdAge'])
     end
 
     # Returns the minimum password age in seconds
     #
     def min_password_age
-      AD.interval(self['minPwdAge'])
+      AD.interval_to_secs(self['minPwdAge'])
     end
 
     # Returns the minimum password length

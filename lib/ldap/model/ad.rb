@@ -21,22 +21,26 @@ module LDAP::Model
     INTERVAL_SEC_RATIO = 10_000_000.0
 
     def self.now
-      ((utc.now.to_f - EPOCH_OFFSET) * INTERVAL_SEC_RATIO).to_i
+      time_to_interval(utc.now)
     end
 
-    def self.at(timestamp)
-      utc.at(timestamp / INTERVAL_SEC_RATIO + EPOCH_OFFSET).localtime
+    def self.time_to_interval(time)
+      ((time.utc.to_f - EPOCH_OFFSET) * INTERVAL_SEC_RATIO).to_i
+    end
+
+    def self.interval_to_time(interval)
+      utc.at(interval.to_f / INTERVAL_SEC_RATIO + EPOCH_OFFSET).localtime
     end
 
     # http://msdn.microsoft.com/en-us/library/windows/desktop/ms684436(v=vs.85).aspx
-    def self.asn1_at(string)
-      if match = string.match(/(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})\.0Z/)
+    def self.asn1_to_time(asn1)
+      if match = asn1.match(/(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})\.0Z/)
         Time.utc(*match.captures.map(&:to_i)).localtime
       end
     end
 
     # http://msdn.microsoft.com/en-us/library/windows/desktop/ms684426(v=vs.85).aspx
-    def self.interval(int_str)
+    def self.interval_to_secs(int_str)
       -(int_str.to_i / INTERVAL_SEC_RATIO).to_i
     end
 
