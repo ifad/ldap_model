@@ -108,14 +108,8 @@ module LDAP::Model
       end
     end
 
-    def self.modify(dn, changes)
-      instrument(:update, :dn => dn, :changes => loggable_changes(changes)) do |event|
-        # Build the operations array
-        operations = changes.inject([]) do |ops, (attr, (old, new))|
-          op = if old.nil? then :add elsif new.nil? then :delete else :replace end
-          ops << [op, attr, new]
-        end
-
+    def self.modify(dn, changes, operations)
+      instrument(:update, :dn => dn, :changes => changes) do |event|
         success = connection.modify(:dn => dn, :operations => operations)
         message = connection.get_operation_result.message
 
@@ -181,16 +175,6 @@ module LDAP::Model
         def instrument(action, payload, &block)
           ActiveSupport::Notifications.instrument("#{action}.ldap", payload, &block)
         end
-
-        def loggable_changes(changes)
-          changes.inject({}) do |ret, (attr, change)|
-            if attr.in?(binary_attributes)
-              change = change.map {|x| x.present? ? "[BINARY SHA:#{Digest::SHA1.hexdigest(x)}]" : ''}
-            end
-
-            ret.update(attr => change)
-          end
-        end
     end
 
     attr_reader :dn
@@ -226,8 +210,15 @@ module LDAP::Model
     def save!
       return true unless changed?
 
+      changes = self.changes
       @previously_changed = changes
-      success, message = self.class.modify(dn, changes)
+
+      # Build the operations array
+      operations = changes.inject([]) do |ops, (attr, (old, new))|
+        op = if old.nil? then :add elsif new.nil? then :delete else :replace end
+        ops << [op, attr, new]
+      end
+      success, message = self.class.modify(dn, loggable_changes, operations)
 
       if success
         @changed_attributes.clear
@@ -285,6 +276,16 @@ module LDAP::Model
       attrs -= Array.wrap(options[:except]).map(&:to_s) if options.key?(:except)
 
       to_hash(attrs)
+    end
+
+    def loggable_changes
+      changes.inject({}) do |ret, (attr, change)|
+        if attr.in?(self.class.binary_attributes)
+          change = change.map {|x| x.present? ? "[BINARY SHA:#{Digest::SHA1.hexdigest(x)}]" : ''}
+        end
+
+        ret.update(attr => change)
+      end
     end
 
     protected

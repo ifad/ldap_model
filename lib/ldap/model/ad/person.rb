@@ -180,31 +180,17 @@ module LDAP::Model
       # and to connect to port 636.
       #
       def change_password(dn, old, new)
-	instrument(:update, :dn => dn, :changes => 'Change Password') do |event|
-
-	  success = connection.modify(:dn => dn, :operations => [
-	    [:delete, :unicodePwd, wrap_passwd_for_ad(old)],
-	    [:add,    :unicodePwd, wrap_passwd_for_ad(new)]
-	  ])
-	  message = connection.get_operation_result.message
-
-	  event.update(:success => success, :message => message)
-
-	  [success, message]
-	end
+        modify(dn, 'Change Password', [
+          [:delete, :unicodePwd, wrap_passwd_for_ad(old)],
+          [:add,    :unicodePwd, wrap_passwd_for_ad(new)]
+        ])
       end
 
       def reset_password(dn, new)
-	instrument(:update, :dn => dn, :changes => 'Reset Password') do |event|
-	  success = connection.modify(:dn => dn, :operations => [
-	    [:replace, :unicodePwd, wrap_passwd_for_ad(new)]
-	  ])
-	  message = connection.get_operation_result.message
+        modify(dn, 'Reset Password', [
+          [:replace, :unicodePwd, wrap_passwd_for_ad(new)]
+        ])
 
-	  event.update(:success => success, :message => message)
-
-	  [success, message]
-	end
       end
 
       private
