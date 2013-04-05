@@ -139,10 +139,10 @@ module LDAP::Model
     def change_password!(old, new)
       success, message = self.class.change_password(self.dn, old, new)
       if success
-	reload
-	true
+        reload
+        true
       else
-	raise Error, "Password change failed: #{message}"
+        raise Error, "Password change failed: #{message}"
       end
     end
 
@@ -153,10 +153,10 @@ module LDAP::Model
     def reset_password!(new)
       success, message = self.class.reset_password(self.dn, new)
       if success
-	reload
-	true
+        reload
+        true
       else
-	raise Error, "Password reset failed: #{message}"
+        raise Error, "Password reset failed: #{message}"
       end
     end
 
@@ -213,9 +213,9 @@ module LDAP::Model
       end
 
       private
-	def wrap_passwd_for_ad(pwd)
-	  ['"', pwd, '"'].join.encode('utf-16le').force_encoding('binary')
-	end
+        def wrap_passwd_for_ad(pwd)
+          ['"', pwd, '"'].join.encode('utf-16le').force_encoding('binary')
+        end
 
     end
   end
