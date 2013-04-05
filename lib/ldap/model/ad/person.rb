@@ -115,7 +115,9 @@ module LDAP::Model
     end
 
     def locked_out?
-      account_flags & ADS_UF_LOCKOUT > 0
+      # Unreliable.
+      # account_flags & ADS_UF_LOCKOUT > 0
+      !locked_out_at.nil?
     end
 
     def disabled?
