@@ -164,6 +164,20 @@ module LDAP::Model
       reset_password!(new) rescue false
     end
 
+    def unlock!
+      success, message = self.class.unlock(self.dn)
+      if success
+        reload
+        true
+      else
+        raise Error, "Account unlock failed: #{message}"
+      end
+    end
+
+    def unlock
+      unlock! rescue false
+    end
+
     class << self
       # Password management
       #
@@ -190,7 +204,12 @@ module LDAP::Model
         modify(dn, 'Reset Password', [
           [:replace, :unicodePwd, wrap_passwd_for_ad(new)]
         ])
+      end
 
+      # Account unlock
+      #
+      def unlock(dn)
+        modify(dn, 'Unlock Account', [[:replace, :lockoutTime, '0']])
       end
 
       private
