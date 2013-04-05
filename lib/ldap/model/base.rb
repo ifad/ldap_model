@@ -168,14 +168,17 @@ module LDAP::Model
             raise Error, "unknown attribute #{attr}"
           end
 
-          # Reader
-          define_method(method) { self[attr] }
+          unless options.include?(:custom)
+            # Reader
+            define_method(method) { self[attr] }
 
-          # Writer
-          if options.include?(:readwrite)
-            define_method("#{method}=") {|val| self[attr] = val}
-            mutable.push method
+            if options.include?(:readwrite)
+              # Writer
+              define_method("#{method}=") {|val| self[attr] = val}
+            end
           end
+
+          mutable.push(method) if options.include?(:readwrite)
         end
 
         super(mutable)

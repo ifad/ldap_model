@@ -76,12 +76,22 @@ module LDAP::Model
     delegate :min_password_length, :password_history_length,
       :password_properties, :to => :root
 
+    define_attribute_methods :expires_at => ['accountExpires', :readwrite, :custom]
+
     def principal
       self['userPrincipalName']
     end
 
     def expires_at
       AD.interval_to_time(self['accountExpires'])
+    end
+
+    def expires_at=(time)
+      self['accountExpires'] = AD.time_to_interval(time)
+    end
+
+    def expires?
+      [0, 0x7FFFFFFFFFFFFFFF].include?(self['accountExpires'].to_i)
     end
 
     def active?
