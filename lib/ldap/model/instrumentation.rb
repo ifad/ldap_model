@@ -41,6 +41,13 @@ module LDAP::Model
         info message, event.duration
       end
 
+      def bind(event)
+        message  = "Authenticating to server as #{event.payload[:username]}"
+        message << " => #{event.payload[:success] ? 'SUCCESS' : 'FAILED'}"
+
+        info message, event.duration
+      end
+
       def info(message, duration)
         super("  \033[1;33mLDAP\033[0m: %s (%.1fms)" % [ message, duration ])
       end

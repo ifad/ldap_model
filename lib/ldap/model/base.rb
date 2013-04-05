@@ -119,6 +119,16 @@ module LDAP::Model
       end
     end
 
+    def self.bind(username, password)
+      instrument(:bind, :username => username) do |event|
+        options = {:method => :simple, :username => username, :password => password}
+
+        connection.bind(options).tap do |success|
+          event.update(:success => success)
+        end
+      end
+    end
+
     class << self
       # Minimal DSL
       %w( string binary computed ).each do |type|

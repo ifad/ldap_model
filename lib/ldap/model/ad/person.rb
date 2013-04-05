@@ -50,6 +50,18 @@ module LDAP::Model
         nil
       end
 
+      # Validate the provided user credentials
+      #
+      def valid_credentials?(dn, password)
+        bind(dn, password)
+      end
+
+      def valid_account?(account, password)
+        if person = find_by_account(account)
+          bind(person.dn, password)
+        end
+      end
+
       def active
         all(filter: filter_active_person)
       end
