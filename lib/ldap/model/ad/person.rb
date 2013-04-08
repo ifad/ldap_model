@@ -91,7 +91,7 @@ module LDAP::Model
     end
 
     def expires?
-      [0, 0x7FFFFFFFFFFFFFFF].include?(self['accountExpires'].to_i)
+      ![0, 0x7FFFFFFFFFFFFFFF].include?(self['accountExpires'].to_i)
     end
 
     def active?
