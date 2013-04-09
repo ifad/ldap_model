@@ -6,6 +6,10 @@ module LDAP::Model
     def ldap_backing(model, options = {})
       include ModelMethods
 
+      unless self.column_names.include?('dn')
+        raise Error, "The #{self} model must have a 'dn' attribute containing the linked LDAP dn"
+      end
+
       @_ldap_model = model
 
       if options[:autosave].present?
@@ -13,6 +17,7 @@ module LDAP::Model
         _check_ldap_autosave_attributes
         _setup_ldap_autosave_callback
       end
+
     end
 
     def ldap_model
