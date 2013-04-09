@@ -54,8 +54,8 @@ module LDAP::Model
       protected
         def _autosave_ldap_attributes
           self.class.ldap_autosave.each do |attr|
-            next unless changed_attributes.key?(attr)
-            ldap_entry.public_send("#{attr}=", self[attr])
+            next unless public_send("#{attr}_changed?")
+            ldap_entry.public_send("#{attr}=", public_send(attr))
           end
 
           ldap_entry.save!
