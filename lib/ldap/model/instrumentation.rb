@@ -78,14 +78,14 @@ module LDAP::Model
 
       def append_info_to_payload(payload)
         super
-        payload[:ldap_runtime] = (ldap_runtime || 0) + LDAP::Instrumentation::LogSubscriber.reset_runtime
+        payload[:ldap_runtime] = (ldap_runtime || 0) + LDAP::Model::Instrumentation::LogSubscriber.reset_runtime
       end
       protected :append_info_to_payload
 
       def cleanup_view_runtime
-        ldap_rt_before_render = LDAP::Instrumentation::LogSubscriber.reset_runtime
+        ldap_rt_before_render = LDAP::Model::Instrumentation::LogSubscriber.reset_runtime
         runtime = super
-        ldap_rt_after_render = LDAP::Instrumentation::LogSubscriber.reset_runtime
+        ldap_rt_after_render = LDAP::Model::Instrumentation::LogSubscriber.reset_runtime
         self.ldap_runtime = ldap_rt_before_render + ldap_rt_after_render
         runtime - ldap_rt_after_render
       end
