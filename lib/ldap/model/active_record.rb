@@ -38,7 +38,7 @@ module LDAP::Model
       end
 
       def _setup_ldap_autosave_callback
-        after_validation :_autosave_ldap_attributes, :if => proc { self.errors.empty? }
+        before_save :_autosave_ldap_attributes, :if => proc { self.errors.empty? }
       end
 
     module ModelMethods
