@@ -174,7 +174,11 @@ module LDAP::Model
 
             if options.include?(:readwrite)
               # Writer
-              define_method("#{method}=") {|val| self[attr] = val}
+              writer = attr.in?(self.binary_attributes) ?
+                proc {|val| self[attr] = val ? val.force_encoding('binary') : val} :
+                proc {|val| self[attr] = val}
+
+              define_method("#{method}=", &writer)
             end
           end
 
