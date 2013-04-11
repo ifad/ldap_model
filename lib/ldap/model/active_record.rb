@@ -61,7 +61,8 @@ module LDAP::Model
           ldap_entry.save!
 
         rescue Error => e
-          errors.add(:ldap, "save failed: #{e.message}")
+          errors.add(:ldap, e.message)
+          raise ::ActiveRecord::RecordInvalid, self
         end
     end
 
