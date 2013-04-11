@@ -19,6 +19,10 @@ module LDAP::Model
 
     def self.config
       @config ||= YAML.load_file(config_path).fetch(env).freeze
+    rescue Errno::ENOENT
+      raise Error, "LDAP connection configuration cannot be found on #{config_path}"
+    rescue KeyError
+      raise Error, "LDAP configuration for environment `#{env}' was not found in #{config_path}"
     end
 
     def self.config_path
