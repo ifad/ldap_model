@@ -1,4 +1,3 @@
-require 'ldap/model/version'
 require 'ldap/model/base'
 require 'ldap/model/ad'
 
