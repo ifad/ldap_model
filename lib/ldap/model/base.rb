@@ -75,11 +75,13 @@ module LDAP::Model
 
     def self.all(options = {})
       base.inject([]) do |result, dn|
-        result.concat(search(options.merge(base: dn)).map {|entry| new(entry)})
+        result.concat(search(options.merge(base: dn)))
       end
     end
 
     def self.search(options)
+      raw_entry = options.delete(:raw_entry)
+
       options[:scope]      ||= scope
       options[:attributes] ||= attributes
 
@@ -91,6 +93,8 @@ module LDAP::Model
 
       instrument(:search, options) do |event|
         (connection.search(options) || []).tap do |result|
+          result.map! {|entry| new(entry)} unless raw_entry
+
           event.update(:results => result.size)
         end
       end
@@ -108,7 +112,7 @@ module LDAP::Model
       entry = search(options)
 
       if entry.respond_to?(:first) && entry.first.present?
-        options[:raw_entry] ? entry.first : new(entry.first)
+        entry.first
       end
     end
 
