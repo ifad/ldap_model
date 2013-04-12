@@ -212,7 +212,9 @@ module LDAP::Model
     end
 
     def change_password(old, new)
-      change_password!(old, new) rescue false
+      change_password!(old, new)
+    rescue LDAP::Model::Error
+      false
     end
 
     def reset_password!(new)
@@ -226,7 +228,9 @@ module LDAP::Model
     end
 
     def reset_password(new)
-      reset_password!(new) rescue false
+      reset_password!(new)
+    rescue LDAP::Model::Error
+      false
     end
 
     def unlock!
@@ -240,7 +244,9 @@ module LDAP::Model
     end
 
     def unlock
-      unlock! rescue false
+      unlock!
+    rescue LDAP::Model::Error
+      false
     end
 
     class << self

@@ -276,7 +276,10 @@ module LDAP::Model
     end
 
     def save
-      save! rescue false
+      save!
+    rescue LDAP::Model::Error
+      false
+    end
 
     def create!
       success, message = self.class.add(dn, attributes.merge('cn' => cn))
