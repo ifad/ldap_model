@@ -24,9 +24,12 @@ module LDAP::Model
       end
     end
 
+    # We do not connect automatically on the test environment,
+    # to allow an application to mock everything out in tests.
+    #
     initializer 'ldap_model.connect' do
       LDAP::Model::Base.establish_connection
-    end
+    end unless defined?(Rails) && Rails.env.test?
 
     config.after_initialize do
       if defined?(Hirb)
