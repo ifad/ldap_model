@@ -9,14 +9,12 @@ module LDAP::Model
     end
 
     initializer 'ldap_model.active_record' do
-      require 'ldap/model/active_record'
       ActiveSupport.on_load(:active_record) do
         extend LDAP::Model::ActiveRecord
       end
     end
 
     initializer 'ldap_model.log_runtime' do
-      require 'ldap/model/instrumentation'
       LDAP::Model::Instrumentation::LogSubscriber.attach_to :ldap
 
       ActiveSupport.on_load(:action_controller) do
