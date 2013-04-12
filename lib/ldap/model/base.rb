@@ -94,7 +94,9 @@ module LDAP::Model
 
       instrument(:search, options) do |event|
         (connection.search(options) || []).tap do |result|
-          result.map! {|entry| new(entry)} unless raw_entry
+          unless raw_entry
+            result.map! {|entry| new(entry, :persisted => true)}
+          end
 
           event.update(:results => result.size)
         end
@@ -120,6 +122,18 @@ module LDAP::Model
     def self.modify(dn, changes, operations)
       instrument(:update, :dn => dn, :changes => changes) do |event|
         success = connection.modify(:dn => dn, :operations => operations)
+        message = connection.get_operation_result.message
+
+        event.update(:success => success, :message => message)
+
+        [success, message]
+      end
+    end
+
+    def self.add(dn, attributes)
+      attributes = attributes.reject {|k,v| v.blank?}
+      instrument(:create, :dn => dn, :attributes => attributes.except(*binary_attributes)) do |event|
+        success = connection.add(:dn => dn, :attributes => attributes)
         message = connection.get_operation_result.message
 
         event.update(:success => success, :message => message)
@@ -168,33 +182,23 @@ module LDAP::Model
       end
 
       def define_attribute_methods(attributes)
-        mutable = []
-
-        attributes.each do |method, args|
-          attr, *options = args
-
+        attributes.each do |method, attr|
           unless attr.in?(self.attributes)
             raise Error, "unknown attribute #{attr}"
           end
 
-          unless options.include?(:custom)
-            # Reader
-            define_method(method) { self[attr] }
+          # Reader
+          define_method(method) { self[attr] }
 
-            if options.include?(:readwrite)
-              # Writer
-              writer = attr.in?(self.binary_attributes) ?
-                proc {|val| self[attr] = val ? val.force_encoding('binary') : val} :
-                proc {|val| self[attr] = val}
+          # Writer
+          writer = attr.in?(self.binary_attributes) ?
+            proc {|val| self[attr] = val ? val.force_encoding('binary') : val} :
+            proc {|val| self[attr] = val}
 
-              define_method("#{method}=", &writer)
-            end
-          end
-
-          mutable.push(method) if options.include?(:readwrite)
+          define_method("#{method}=", &writer)
         end
 
-        super(mutable)
+        super(attributes.keys)
       end
 
       protected
@@ -203,22 +207,26 @@ module LDAP::Model
         end
     end
 
-    attr_reader :dn
+    attr_reader :dn, :cn
 
-    def initialize(entry)
-      initialize_from(entry)
+    def initialize(entry, options = {})
+      initialize_from(entry, options)
     end
 
     def reload
-      initialize_from(self.class.find(self.dn, :raw_entry => true))
+      entry = self.class.find(self.dn, :raw_entry => true)
+      raise Error, "Cannot find DN #{self.dn}" unless entry
+      initialize_from(entry, :persisted => true)
       self
     end
 
-    def initialize_from(entry)
-      @dn = entry.dn.dup.force_encoding('utf-8').freeze
+    def initialize_from(entry, options)
+      @persisted = options[:persisted] || false
+      @dn = Array.wrap(entry[:dn]).first.dup.force_encoding('utf-8').freeze
+      @cn = dn.split(',', 2).first.sub(/^cn=/i, '')
       @attributes = self.class.attributes.inject({}) do |h, attr|
 
-        value = entry[attr].reject(&:blank?).each do |v|
+        value = Array.wrap(entry[attr]).reject(&:blank?).each do |v|
           v.force_encoding(attr.in?(self.class.binary_attributes) ? 'binary' : 'utf-8')
         end
 
@@ -229,11 +237,24 @@ module LDAP::Model
     end
     protected :initialize_from
 
+    def id
+      dn
+    end
+
+    def persisted?
+      @persisted
+    end
+
+    def new_record?
+      !persisted?
+    end
+
     def attributes
       @attributes.dup
     end
 
     def save!
+      return create! unless persisted?
       return true unless changed?
 
       changes = self.changes
@@ -246,16 +267,23 @@ module LDAP::Model
       end
       success, message = self.class.modify(dn, loggable_changes, operations)
 
-      if success
-        @changed_attributes.clear
-        true
-      else
-        raise Error, "Save failed: #{message}"
-      end
+      raise Error, "Save failed: #{message}" unless success
+
+      @changed_attributes.clear
+      @persisted = true
+
+      return true
     end
 
     def save
       save! rescue false
+
+    def create!
+      success, message = self.class.add(dn, attributes.merge('cn' => cn))
+      raise Error, "Create failed: #{message}" unless success
+      @persisted = true
+
+      return true
     end
 
     def [](attr)
@@ -314,11 +342,25 @@ module LDAP::Model
       end
     end
 
+    def to_ary
+      [self]
+    end
+
     protected
-      def method_missing(name, *args, &block)
-        self[name.to_s]
-      rescue KeyError
-        super
+      def method_missing(method, *args, &block)
+        if m = /(\w+)(=?)/.match(method)
+          name, setter = m[1], m[2].present?
+        end
+
+        if name.nil? || !name.in?(self.class.attributes)
+          return super
+        end
+
+        if setter
+          self[name] = args.first
+        else
+          self[name]
+        end
       end
 
   end

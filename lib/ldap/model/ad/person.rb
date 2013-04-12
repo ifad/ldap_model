@@ -2,6 +2,13 @@ module LDAP::Model
   class AD::Person < Base
 
     string_attributes %w[
+      givenName
+      sn
+      name
+      displayName
+      mail
+      sAMAccountName
+      userPrincipalName
       accountExpires
       pwdLastSet
       userAccountControl
@@ -10,7 +17,6 @@ module LDAP::Model
       whenCreated
       whenChanged
       lockoutTime
-      userPrincipalName
     ]
 
     computed_attributes %w[
@@ -76,7 +82,34 @@ module LDAP::Model
     delegate :min_password_length, :password_history_length,
       :password_properties, :to => :root
 
-    define_attribute_methods :expires_at => ['accountExpires', :readwrite, :custom]
+    define_attribute_methods :expires_at => 'accountExpires'
+
+    def attributes
+      return super if persisted?
+
+      super.tap do |a|
+        a.update(
+          'userAccountControl' => '544',
+          'objectClass'        => %w( top person organizationalPerson user ),
+          'userPrincipalName'  => [self.sAMAccountName, self.root.domain].join('@'),
+          'name'               => a.values_at('givenName', 'sn').join(' ').presence,
+        )
+        a['displayName'] ||= a['name']
+        a['mail']        ||= a['userPrincipalName']
+
+        @cn = name
+      end
+    end
+
+    def create!
+      required = %w( sAMAccountName givenName sn ).each do |attr|
+        unless self[attr].present?
+          raise Error, "Please provide a #{attr} attribute"
+        end
+      end
+
+      super
+    end
 
     def principal
       self['userPrincipalName']

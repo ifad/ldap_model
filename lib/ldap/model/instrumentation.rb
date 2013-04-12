@@ -34,6 +34,17 @@ module LDAP::Model
         info message, event.duration
       end
 
+      def create(event)
+        self.class.runtime += event.duration
+
+        message  = " subject '#{event.payload[:dn]}'"
+        message << " create #{event.payload[:attributes].inspect}"
+        message << " => #{event.payload[:success] ? 'SUCCESS' : 'FAILED'} " if event.payload.key?(:success)
+        message << " (#{event.payload[:message]})" if event.payload.key?(:message)
+
+        info message, event.duration
+      end
+
       def connect(event)
         message  = "Connecting to server specified by #{event.payload[:config]}"
         message << " FAILED: #{event.payload[:exception].last}" if event.payload.key?(:exception)

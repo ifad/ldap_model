@@ -68,6 +68,12 @@ module LDAP::Model
       super(base.first)
     end
 
+    # Returns the DNS domain name
+    #
+    def domain
+      dn.scan(/dc=(\w+)/i).flatten.join('.').downcase
+    end
+
     # Returns the account lockout duration in seconds
     #
     def lockout_duration
