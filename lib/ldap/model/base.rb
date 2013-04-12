@@ -133,7 +133,7 @@ module LDAP::Model
         options = {:method => :simple, :username => username, :password => password}
 
         connection.bind(options).tap do |success|
-          event.update(:success => success)
+          event.update(:success => success, :message => connection.get_operation_result.message)
         end
       end
     end

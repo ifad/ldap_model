@@ -44,6 +44,7 @@ module LDAP::Model
       def bind(event)
         message  = "Authenticating to server as #{event.payload[:username]}"
         message << " => #{event.payload[:success] ? 'SUCCESS' : 'FAILED'}"
+        message << " (#{event.payload[:message]})" if event.payload.key?(:message)
 
         info message, event.duration
       end
