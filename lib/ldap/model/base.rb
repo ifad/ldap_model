@@ -61,6 +61,7 @@ module LDAP::Model
 
         unless @@connection.bind
           reason = @@connection.get_operation_result.message
+          @@connection = nil
           raise Error, "LDAP bind to #{config['hostname']} failed: #{reason}"
         end
 
@@ -70,7 +71,7 @@ module LDAP::Model
     end
 
     def self.connected?
-      defined?(@@connection)
+      defined?(@@connection) && @@connection
     end
 
     def self.all(options = {})
