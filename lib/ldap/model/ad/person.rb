@@ -162,15 +162,18 @@ module LDAP::Model
     end
 
     def password_expired?
-      account_flags & ADS_UF_PASSWORD_EXPIRED > 0
+      must_change_password? || (account_flags & ADS_UF_PASSWORD_EXPIRED > 0)
     end
 
     def can_change_password?
       account_flags & ADS_UF_PASSWD_CANT_CHANGE == 0
     end
 
+    def must_change_password?
+      self['pwdLastSet'] == '0' # Must change
+    end
+
     def password_changed_at
-      return if self['pwdLastSet'] == '0' # Must change
       AD.interval_to_time(self['pwdLastSet'])
     end
 
