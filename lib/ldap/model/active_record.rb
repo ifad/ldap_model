@@ -11,30 +11,41 @@ module LDAP::Model
       end
 
       @_ldap_model = model
+      @_ldap_options = options
 
-      if options[:autosave].present?
-        @_ldap_autosave = options[:autosave].map(&:to_s).freeze
+      if ldap_options[:autosave].present?
+        ldap_options[:autosave].map!(&:to_s)
         _check_ldap_autosave_attributes
         _setup_ldap_autosave_callback
       end
 
+      if options[:create].present?
+        ldap_options[:create].map!(&:to_s)
+        _setup_ldap_create_callback
+      end
+
+      ldap_options.freeze
     end
 
     def ldap_model
       @_ldap_model
     end
 
-    def ldap_autosave
-      @_ldap_autosave
+    def ldap_options
+      @_ldap_options
     end
 
     private
       def _check_ldap_autosave_attributes
         # Check validity of given attributes
-        invalid = ldap_autosave.reject {|m| ldap_model.instance_methods.grep(/#{m}=$/)}
+        invalid = ldap_options[:autosave].reject {|m| ldap_model.instance_methods.grep(/#{m}=$/)}
         if invalid.present?
           raise Error, "Invalid autosave attributes for #{ldap_model}: #{invalid.inspect}"
         end
+      end
+
+      def _setup_ldap_create_callback
+        before_create :_create_ldap_entry, :if => proc { self.errors.empty? }
       end
 
       def _setup_ldap_autosave_callback
@@ -43,7 +54,18 @@ module LDAP::Model
 
     module ModelMethods
       def ldap_entry
-        @_ldap_entry ||= self.class.ldap_model.find(self.dn)
+        @_ldap_entry ||= begin
+          if new_record? || self.dn.blank?
+            self.dn = "CN=#{self.name},#{self.class.ldap_model.base.first}"
+          end
+
+          entry = self.class.ldap_model.find(self.dn)
+          if entry.nil? && self.class.ldap_options[:create]
+            entry = self.class.ldap_model.new(dn: self.dn)
+          end
+
+          entry
+        end
       end
 
       def reload(*)
@@ -53,13 +75,24 @@ module LDAP::Model
 
       protected
         def _autosave_ldap_attributes
-          self.class.ldap_autosave.each do |attr|
+          self.class.ldap_options[:autosave].each do |attr|
             next unless public_send("#{attr}_changed?")
             ldap_entry.public_send("#{attr}=", public_send(attr))
           end
 
-          ldap_entry.save!
+          ldap_entry.save! unless ldap_entry.new_record? && self.class.ldap_options[:create]
 
+        rescue Error => e
+          errors.add(:ldap, e.message)
+          raise ::ActiveRecord::RecordInvalid, self
+        end
+
+        def _create_ldap_entry
+          self.class.ldap_options[:create].each do |attr|
+            ldap_entry.public_send("#{attr}=", public_send(attr))
+          end
+
+          ldap_entry.save!
         rescue Error => e
           errors.add(:ldap, e.message)
           raise ::ActiveRecord::RecordInvalid, self

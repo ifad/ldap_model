@@ -222,8 +222,11 @@ module LDAP::Model
 
     def initialize_from(entry, options)
       @persisted = options[:persisted] || false
+
+      entry = entry.with_indifferent_access if entry.respond_to?(:with_indifferent_access)
+
       @dn = Array.wrap(entry[:dn]).first.dup.force_encoding('utf-8').freeze
-      @cn = dn.split(',', 2).first.sub(/^cn=/i, '')
+      @cn = dn.match(/^cn=(.+?),/i) { $1 }
       @attributes = self.class.attributes.inject({}) do |h, attr|
 
         value = Array.wrap(entry[attr]).reject(&:blank?).each do |v|
