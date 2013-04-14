@@ -136,6 +136,7 @@ module LDAP::Model
     end
 
     def password_expires_at
+      return unless password_expires?
       password_changed_at + root.max_password_age
     end
 
