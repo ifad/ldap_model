@@ -80,7 +80,9 @@ module LDAP::Model
     end
 
     delegate :min_password_length, :password_history_length,
-      :password_properties, :to => :root
+      :password_properties, :password_complex?,
+      :password_complexity_inclusion_regexp,
+      :to => :root
 
     define_attribute_methods :expires_at => 'accountExpires'
 
@@ -176,6 +178,10 @@ module LDAP::Model
 
     def password_changed_at
       AD.interval_to_time(self['pwdLastSet'])
+    end
+
+    def password_complexity_exclusion_regexp
+      root.password_complexity_exclusion_regexp(self)
     end
 
     def locked_out_at

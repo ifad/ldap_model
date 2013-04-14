@@ -120,12 +120,81 @@ module LDAP::Model
     # Returns an array of password properties
     #
     def password_properties
-      bitmask = self['pwdProperties'].to_i
+      bitmask = self.password_properties_bitmask
 
       [].tap do |ret|
         PASSWORD_PROPERTIES.each do |flag, descr|
           ret.push(descr) if bitmask & flag > 0
         end
+      end
+    end
+
+    # Returns the password properties bitmask
+    #
+    def password_properties_bitmask
+      self['pwdProperties'].to_i
+    end
+
+    # Returns true if the policy requires a 'complex' password
+    # http://technet.microsoft.com/en-us/library/cc786468(v=ws.10).aspx
+    #
+    def password_complex?
+      self.password_properties_bitmask & DOMAIN_PASSWORD_COMPLEX > 0
+    end
+
+    # Returns a regexp for the given person such as if the
+    # new password matches this regexp it is invalid.
+    #
+    # http://technet.microsoft.com/en-us/library/cc786468(v=ws.10).aspx
+    #
+    def password_complexity_exclusion_regexp(person)
+      tokens = []
+
+      # The samAccountName is checked in its entirety only to determine
+      # whether it is part of the password. If the samAccountName is less
+      # than three characters long, this check is skipped.
+      #
+
+      tokens << person.sAMAccountName if person.sAMAccountName.length >= 3
+
+      # The displayName is parsed for delimiters: commas, periods, dashes
+      # or hyphens, underscores, spaces, pound signs, and tabs. If any of
+      # these delimiters are found, the displayName is split and all
+      # parsed sections (tokens) are confirmed not to be included in the
+      # password. Tokens that are less than three characters in length
+      # are ignored, and substrings of the tokens are not checked.
+      #
+      tokens.concat person.displayName.split(/[\.\s,#_-]/) #.scan(/\w+/)
+
+      Regexp.compile tokens.map {|tok| "(?:#{tok})"}.join, Regexp::IGNORECASE
+    end
+
+    # Returns a regexp such as if the match fails, the new password is
+    # invalid.
+    #
+    def password_complexity_inclusion_regexp
+      # Passwords must contain characters from at least three of the
+      # following four categories:
+      #
+      # - English uppercase alphabet characters (A–Z)
+      # - English lowercase alphabet characters (a–z)
+      # - Base 10 digits (0–9)
+      # - Non-alphanumeric characters (~!@#$%^&*_-+=`|\(){}[]:;"'<>,.?/)
+      #
+
+      @complexity_re ||= begin
+        classes = [
+          '[A-Z]',
+          '[a-z]',
+          '[0-9]',
+          '[~!@#$%^&*_+=`|\\(){}\[\]:;"\'<>,.?/-]'
+        ]
+
+        Regexp.compile classes
+          .map {|c| ['(?:', c, ')'].join} # Wrap the char classes
+          .permutation(classes.size - 1)  # Permutation
+          .map {|g| g.join('.*?') }       # Other chars may appear in between
+          .join('|')
       end
     end
 
