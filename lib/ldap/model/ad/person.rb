@@ -89,7 +89,7 @@ module LDAP::Model
 
       super.tap do |a|
         a.update(
-          'userAccountControl' => '544',
+          'userAccountControl' => '544', # Normal user + No password required
           'objectClass'        => %w( top person organizationalPerson user ),
           'userPrincipalName'  => [self.sAMAccountName, self.root.domain].join('@'),
           'name'               => a.values_at('givenName', 'sn').join(' ').presence,
@@ -102,7 +102,7 @@ module LDAP::Model
     end
 
     def create!
-      required = %w( sAMAccountName givenName sn ).each do |attr|
+      %w( sAMAccountName givenName sn ).each do |attr|
         unless self[attr].present?
           raise Error, "Please provide a #{attr} attribute"
         end
