@@ -215,8 +215,9 @@ module LDAP::Model
 
     def change_password!(old, new)
       success, message = self.class.change_password(self.dn, old, new)
+      reload
+
       if success
-        reload
         true
       else
         raise Error, "Password change failed: #{message}"
@@ -231,8 +232,9 @@ module LDAP::Model
 
     def reset_password!(new)
       success, message = self.class.reset_password(self.dn, new)
+      reload
+
       if success
-        reload
         true
       else
         raise Error, "Password reset failed: #{message}"
@@ -247,8 +249,9 @@ module LDAP::Model
 
     def unlock!
       success, message = self.class.unlock(self.dn)
+      reload
+
       if success
-        reload
         true
       else
         raise Error, "Account unlock failed: #{message}"
