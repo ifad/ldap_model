@@ -186,7 +186,7 @@ module LDAP::Model
     end
 
     def locked_out_at
-      return if self['lockoutTime'] == '0' # Not Locked Out
+      return if self['lockoutTime'].nil? || self['lockoutTime'] == '0' # Not Locked Out
       AD.interval_to_time(self['lockoutTime'])
     end
 
