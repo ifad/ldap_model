@@ -82,6 +82,7 @@ module LDAP::Model
     delegate :min_password_length, :password_history_length,
       :password_properties, :password_complex?,
       :password_complexity_inclusion_regexp,
+      :lockout_duration, :lockout_threshold, :lockout_observation_window,
       :to => :root
 
     define_attribute_methods :expires_at => 'accountExpires'
@@ -195,6 +196,10 @@ module LDAP::Model
 
     def failed_login_attempts
       self['badPwdCount'].to_i
+    end
+
+    def remaining_login_attempts
+      lockout_threshold - failed_login_attempts
     end
 
     def last_failed_login
