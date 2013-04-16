@@ -1,8 +1,10 @@
-module LDAP::Model
-  autoload :AD,              'ldap/model/ad'
-  autoload :Base,            'ldap/model/base'
-  autoload :ActiveRecord,    'ldap/model/active_record'
-  autoload :Instrumentation, 'ldap/model/instrumentation'
+module LDAP
+  module Model
+    autoload :AD,              'ldap/model/ad'
+    autoload :Base,            'ldap/model/base'
+    autoload :ActiveRecord,    'ldap/model/active_record'
+    autoload :Instrumentation, 'ldap/model/instrumentation'
+  end
 end
 
 if defined?(Rails)
