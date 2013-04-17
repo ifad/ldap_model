@@ -164,7 +164,7 @@ module LDAP::Model
       # password. Tokens that are less than three characters in length
       # are ignored, and substrings of the tokens are not checked.
       #
-      tokens.concat person.displayName.split(/[\.\s,#_-]/) #.scan(/\w+/)
+      tokens.concat person.displayName.split(/[\.\s,#_-]+/) #.scan(/\w+/)
 
       Regexp.compile tokens.map {|tok| "(?:#{tok})"}.join('|'), Regexp::IGNORECASE
     end
