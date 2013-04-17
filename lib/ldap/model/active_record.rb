@@ -45,7 +45,7 @@ module LDAP::Model
       end
 
       def _setup_ldap_create_callback
-        before_create :_create_ldap_entry, :if => proc { self.errors.empty? }
+        before_create :_create_ldap_entry, :if => proc { self.ldap_entry.new_record? && self.errors.empty? }
       end
 
       def _setup_ldap_autosave_callback
@@ -66,6 +66,16 @@ module LDAP::Model
 
           entry
         end
+      end
+
+      # Useful for LDAP imports
+      #
+      def ldap_entry=(entry)
+        unless entry.is_a? self.class.ldap_model
+          raise Error, "Invalid entry type: #{entry.class}, #{self.class.ldap_model.class} expected"
+        end
+
+        @_ldap_entry = entry
       end
 
       def reload(*)
