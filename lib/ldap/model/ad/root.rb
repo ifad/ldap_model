@@ -166,7 +166,9 @@ module LDAP::Model
       #
       tokens.concat person.displayName.split(/[\.\s,#_-]+/) #.scan(/\w+/)
 
-      Regexp.compile tokens.map {|tok| "(?:#{tok})"}.join('|'), Regexp::IGNORECASE
+      source = tokens.map! {|tok| "(?:#{Regexp.escape(tok)})"}.join('|')
+
+      Regexp.compile source, Regexp::IGNORECASE
     end
 
     # Returns a regexp such as if the match fails, the new password is
