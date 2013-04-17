@@ -108,6 +108,7 @@ module LDAP::Model
     end
 
     def self.find(dn, options = {})
+      dn = dn.dup.force_encoding('binary')
       find_one(options.merge(base: dn, scope: Net::LDAP::SearchScope_BaseObject))
     end
 
