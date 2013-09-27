@@ -42,8 +42,19 @@ module LDAP::Model
         Net::LDAP::Filter.eq('objectClass', 'person')
       end
 
+      # Get accounts that are not expired. Rules:
+      #
+      # 1. accountExpires is greater than now
+      # 2. accountExpires is equal to 0x7fffffffffffffff
+      # 3. accountExpires is equal to 0.
+      #
+      # The 2. and 3. rules indicate that the account never expires.
+      #
+      # http://msdn.microsoft.com/en-us/library/windows/desktop/ms675098(v=vs.85).aspx
+      #
       def filter_active_person
-        Net::LDAP::Filter.ge('accountExpires', AD.now.to_s)
+        (Net::LDAP::Filter.ge('accountExpires', AD.now.to_s) |
+         Net::LDAP::Filter.eq('accountExpires', '0'))
       end
 
       # Find by sAMAccountName
