@@ -3,21 +3,21 @@ PATH
   specs:
     ldap_model (0.1.0)
       activemodel (~> 3.2)
-      net-ldap (= 0.2.2)
+      net-ldap
 
 GEM
   remote: https://rubygems.org/
   specs:
-    activemodel (3.2.13)
-      activesupport (= 3.2.13)
+    activemodel (3.2.17)
+      activesupport (= 3.2.17)
       builder (~> 3.0.0)
-    activesupport (3.2.13)
-      i18n (= 0.6.1)
+    activesupport (3.2.17)
+      i18n (~> 0.6, >= 0.6.4)
       multi_json (~> 1.0)
     builder (3.0.4)
-    i18n (0.6.1)
-    multi_json (1.7.2)
-    net-ldap (0.2.2)
+    i18n (0.6.9)
+    multi_json (1.8.4)
+    net-ldap (0.3.1)
 
 PLATFORMS
   ruby
