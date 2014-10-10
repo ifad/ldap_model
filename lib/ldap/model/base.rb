@@ -121,7 +121,7 @@ module LDAP::Model
     end
 
     def self.modify(dn, changes, operations)
-      instrument(:update, :dn => dn, :changes => changes) do |event|
+      instrument(:update, :dn => dn, :changes => Array.wrap(changes)) do |event|
         success = connection.modify(:dn => dn, :operations => operations)
         message = connection.get_operation_result.message
 
