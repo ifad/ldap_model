@@ -29,16 +29,16 @@ module LDAP::Model
       conf = Pathname('config/ldap.yml')
 
       begin
-        if conf.exist?
-          conf = YAML.load(conf.read).fetch(Rails.env)
-          LDAP::Model::Base.establish_connection(conf)
-        end
+        conf = YAML.load(conf.read).fetch(Rails.env)
+        LDAP::Model::Base.establish_connection(conf)
       rescue => e
         if Rails.env.test?
           puts "LDAP connection disabled (#{e.to_s})"
           LDAP::Model::ActiveRecord.disable!
-        elsif e === KeyError
-          raise "LDAP configuration for environment `#{env}' was not found in #{conf}"
+        elsif e.is_a?(Errno::ENOENT)
+          raise "LDAP configuration is missing, please create #{conf}"
+        elsif e.is_a?(KeyError)
+          raise "LDAP configuration for environment `#{Rails.env}' was not found in #{conf}"
         else
           raise
         end
