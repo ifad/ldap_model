@@ -17,40 +17,32 @@ module LDAP::Model
       delegate :logger, :logger=, :to => Instrumentation::LogSubscriber
     end
 
+    def self.connection
+      raise Error, "Connection not established" unless connected?
+      @connection
+    end
+
     def self.config
-      @config ||= YAML.load_file(config_path).fetch(env).freeze
-    rescue Errno::ENOENT
-      raise Error, "LDAP connection configuration cannot be found on #{config_path}"
-    rescue KeyError
-      raise Error, "LDAP configuration for environment `#{env}' was not found in #{config_path}"
+      @config
     end
 
-    def self.config_path
-      'config/ldap.yml'
-    end
+    def self.establish_connection(config)
+      config['port'] ||= 389
 
-    def self.env
-      defined?(Rails) ? Rails.env.to_s :
-        (ENV['RAILS_ENV'] || ENV['RACK_ENV'] || 'development')
-    end
+      url = "ldap%s://%s@%s:%d/" % [
+        ('s' if config['encryption']),
+        config['username'],
+        config['hostname'],
+        config['port']
+      ]
 
-    class << self
-      def connection
-        establish_connection unless connected?
-        @@connection
-      end
-      protected :connection
-    end
+      @config = config.dup.freeze
 
-    def self.establish_connection
-      return true if connected?
-
-      instrument(:connect, :config => config_path) do
-
-        @@connection = Net::LDAP.new(
+      instrument(:connect, :url => url) do
+        @connection = Net::LDAP.new(
           base:       config['base'],
           host:       config['hostname'],
-          port:       (config['port'] || 389).to_i,
+          port:       config['port'].to_i,
           encryption: config['encryption'],
           auth:       {
             method:   :simple,
@@ -59,19 +51,22 @@ module LDAP::Model
           }
         )
 
-        unless @@connection.bind
-          reason = @@connection.get_operation_result.message
-          @@connection = nil
+        unless @connection.bind
+          reason = @connection.get_operation_result.message
+          @connection = nil
           raise Error, "LDAP bind to #{config['hostname']} failed: #{reason}"
         end
-
       end
 
       true
     end
 
     def self.connected?
-      defined?(@@connection) && @@connection
+      !!@connection
+    end
+
+    def self.inherited(subclass)
+      subclass.instance_variable_set(:@connection, @connection)
     end
 
     def self.all(options = {})

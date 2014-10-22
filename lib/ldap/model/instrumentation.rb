@@ -46,7 +46,7 @@ module LDAP::Model
       end
 
       def connect(event)
-        message  = "Connecting to server specified by #{event.payload[:config]}"
+        message  = "Connecting to #{event.payload[:url]}"
         message << " FAILED: #{event.payload[:exception].last}" if event.payload.key?(:exception)
 
         info message, event.duration

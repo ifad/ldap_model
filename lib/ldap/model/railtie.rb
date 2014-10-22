@@ -26,8 +26,24 @@ module LDAP::Model
     # to allow an application to mock everything out in tests.
     #
     initializer 'ldap_model.connect' do
-      LDAP::Model::Base.establish_connection
-    end unless defined?(Rails) && Rails.env.test?
+      conf = Pathname('config/ldap.yml')
+
+      begin
+        if conf.exist?
+          conf = YAML.load(conf.read).fetch(Rails.env)
+          LDAP::Model::Base.establish_connection(conf)
+        end
+      rescue => e
+        if Rails.env.test?
+          puts "LDAP connection disabled (#{e.to_s})"
+          LDAP::Model::ActiveRecord.disable!
+        elsif e === KeyError
+          raise "LDAP configuration for environment `#{env}' was not found in #{conf}"
+        else
+          raise
+        end
+      end
+    end
 
     config.after_initialize do
       if defined?(Hirb)
