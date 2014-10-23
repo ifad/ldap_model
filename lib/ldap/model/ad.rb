@@ -3,6 +3,7 @@ require 'active_support/core_ext/time/zones'
 module LDAP::Model
   module AD
 
+    autoload :Group,  'ldap/model/ad/group'
     autoload :Person, 'ldap/model/ad/person'
     autoload :Root,   'ldap/model/ad/root'
 
