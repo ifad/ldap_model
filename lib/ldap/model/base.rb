@@ -152,7 +152,7 @@ module LDAP::Model
 
     class << self
       # Minimal DSL
-      %w( string binary computed ).each do |type|
+      %w( string array binary computed ).each do |type|
         module_eval <<-RUBY, __FILE__, __LINE__+1
           def #{type}_attributes(list=nil)
             @#{type}_attributes ||= superclass.respond_to?(:#{type}_attributes) ?
@@ -164,7 +164,7 @@ module LDAP::Model
       end
 
       def attributes
-        @attributes ||= (string_attributes | binary_attributes)
+        @attributes ||= (string_attributes | binary_attributes | array_attributes)
       end
 
       def export_attributes
@@ -296,7 +296,11 @@ module LDAP::Model
 
     def []=(attr, value)
       if value.present?
-        value = value.to_s
+        value = if attr.in?(self.class.array_attributes)
+          Array.wrap(value)
+        else
+          value.to_s
+        end
 
         if attr.in?(self.class.binary_attributes)
           value = value.force_encoding('binary')
