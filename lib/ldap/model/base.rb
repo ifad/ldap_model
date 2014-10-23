@@ -66,7 +66,9 @@ module LDAP::Model
     end
 
     def self.inherited(subclass)
-      subclass.instance_variable_set(:@connection, @connection)
+      %w( @connection @base @scope ).each do |ivar|
+        subclass.instance_variable_set(ivar, instance_variable_get(ivar))
+      end
     end
 
     def self.all(options = {})
