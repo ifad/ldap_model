@@ -10,6 +10,7 @@ require 'ldap/model/error'
 module LDAP::Model
   class Base
     include ActiveModel::Dirty
+    include ActiveModel::Validations
 
     Error = LDAP::Model::Error # :nodoc:
 

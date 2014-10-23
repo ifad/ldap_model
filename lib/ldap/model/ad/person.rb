@@ -1,6 +1,8 @@
 module LDAP::Model
   class AD::Person < Base
 
+    validates :sAMAccountName, :givenName, presence: true
+
     string_attributes %w[
       givenName
       sn
@@ -113,16 +115,6 @@ module LDAP::Model
 
         @cn = name
       end
-    end
-
-    def create!
-      %w( sAMAccountName givenName sn ).each do |attr|
-        unless self[attr].present?
-          raise Error, "Please provide a #{attr} attribute"
-        end
-      end
-
-      super
     end
 
     def principal
