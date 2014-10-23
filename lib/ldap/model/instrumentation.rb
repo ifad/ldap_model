@@ -45,6 +45,17 @@ module LDAP::Model
         info message, event.duration
       end
 
+      def delete(event)
+        self.class.runtime += event.duration
+
+        message  = " subject '#{event.payload[:dn]}'"
+        message << " destroy "
+        message << " => #{event.payload[:success] ? 'SUCCESS' : 'FAILED'} " if event.payload.key?(:success)
+        message << " (#{event.payload[:message]})" if event.payload.key?(:message)
+
+        info message, event.duration
+      end
+
       def connect(event)
         message  = "Connecting to #{event.payload[:url]}"
         message << " FAILED: #{event.payload[:exception].last}" if event.payload.key?(:exception)

@@ -140,6 +140,17 @@ module LDAP::Model
       end
     end
 
+    def self.delete(dn)
+      instrument(:delete, dn: dn) do |event|
+        success = connection.delete(dn: dn)
+        message = connection.get_operation_result.message
+
+        event.update(:success => success, :message => message)
+
+        [success, message]
+      end
+    end
+
     def self.bind(username, password)
       instrument(:bind, :username => username) do |event|
         options = {:method => :simple, :username => username, :password => password}
@@ -288,6 +299,20 @@ module LDAP::Model
       @persisted = true
 
       return true
+    end
+
+    def destroy!
+      success, message = self.class.delete(dn)
+      raise Error, "Destroy failed: #{message}" unless success
+      @persisted = false
+
+      return true
+    end
+
+    def destroy
+      destroy!
+    rescue LDAP::Model::Error
+      false
     end
 
     def [](attr)
