@@ -317,7 +317,11 @@ module LDAP::Model
     end
 
     def [](attr)
-      @attributes.fetch(attr)
+      value = @attributes.fetch(attr)
+      if attr.in?(self.class.array_attributes)
+        value = Array.wrap(value)
+      end
+      return value
     end
 
     def []=(attr, value)
