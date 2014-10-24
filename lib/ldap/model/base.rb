@@ -339,7 +339,13 @@ module LDAP::Model
         value = nil
       end
 
-      if value != self[attr]
+      changed = if attr.in?(self.class.array_attributes)
+        Array.wrap(value).to_set != self[attr].to_set
+      else
+        value != self[attr]
+      end
+
+      if changed
         public_send "#{attr}_will_change!"
         @attributes[attr] = value
       end
