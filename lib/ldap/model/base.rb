@@ -270,20 +270,16 @@ module LDAP::Model
       return create! unless persisted?
       return true unless changed?
 
-      changes = self.changes
-      @previously_changed = changes
+      persisting do |changes|
+        # Build the operations array
+        operations = changes.inject([]) do |ops, (attr, (old, new))|
+          op = if old.nil? then :add elsif new.nil? then :delete else :replace end
+          ops << [op, attr, new]
+        end
+        success, message = self.class.modify(dn, loggable_changes, operations)
 
-      # Build the operations array
-      operations = changes.inject([]) do |ops, (attr, (old, new))|
-        op = if old.nil? then :add elsif new.nil? then :delete else :replace end
-        ops << [op, attr, new]
+        raise Error, "Save failed: #{message}" unless success
       end
-      success, message = self.class.modify(dn, loggable_changes, operations)
-
-      raise Error, "Save failed: #{message}" unless success
-
-      @changed_attributes.clear
-      @persisted = true
 
       return true
     end
@@ -295,12 +291,26 @@ module LDAP::Model
     end
 
     def create!
-      success, message = self.class.add(dn, attributes.merge('cn' => cn))
-      raise Error, "Create failed: #{message}" unless success
-      @persisted = true
+      persisting do
+        success, message = self.class.add(dn, attributes.merge('cn' => cn))
+        raise Error, "Create failed: #{message}" unless success
+      end
 
       return true
     end
+
+    def persisting(&block)
+      changes = self.changes
+      @previously_changed = self.changes
+
+      ret = block.call(changes)
+
+      @changed_attributes.clear
+      @persisted = true
+
+      return ret
+    end
+    protected :persisting
 
     def destroy!
       success, message = self.class.delete(dn)
