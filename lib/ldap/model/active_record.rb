@@ -13,16 +13,23 @@ module LDAP::Model
       @_ldap_model = model
       @_ldap_options = options
 
+      if ldap_options[:associations].present?
+        _check_ldap_association_attributes
+        _setup_ldap_association_callback
+      end
+
       if ldap_options[:autosave].present?
         ldap_options[:autosave].map!(&:to_s)
         _check_ldap_autosave_attributes
         _setup_ldap_autosave_callback
       end
 
-      if options[:create].present?
+      if ldap_options[:create].present?
         ldap_options[:create].map!(&:to_s)
         _setup_ldap_create_callback
       end
+
+      _setup_ldap_destroy_callback
 
       ldap_options.freeze
     end
@@ -44,6 +51,54 @@ module LDAP::Model
         end
       end
 
+      def _check_ldap_association_attributes
+        ldap_options[:associations].each do |ldap_attribute, assoc_a|
+          raise Error, "Invalid association :ldap_attribute for #{self.name}#ldap_backing: #{ldap_attribute}(is it defined in #{ldap_model}.define_attribute_methods?)" unless ldap_model.instance_methods.include? "#{ldap_attribute}=".to_sym
+          assoc = self.reflect_on_association(assoc_a[0].to_sym)
+          raise Error, "Invalid association class name for #{self.name}#ldap_backing: #{assoc_a[0]}" unless assoc
+          raise Error, "LDAP backing is only supported for :has_many associations in #{self.name}#ldap_backing: #{assoc_a[0]}" unless assoc.macro == :has_many
+          klass = assoc.klass
+          raise Error, "Invalid association class name for #{self.name}#ldap_backing: #{assoc_a[0]}" unless klass
+          raise Error, "Invalid assocation method for #{self.name}#ldap_backing: #{klass.name}.#{assoc_a[1]}" unless klass.instance_methods.include? assoc_a[1].to_sym
+        end
+      end
+
+      # Appends methods to add/delete to/from the ldap array attribute to the before/after_add chain
+      # for the association
+      def _setup_ldap_association_callback
+        ldap_options[:associations].each do |ldap_attribute,assoc_a|
+          assoc = assoc_a[0]
+          method = assoc_a[1]
+          raise "Missing ldap_attribute" unless ldap_attribute
+          raise "Missing association name" unless assoc
+          raise "Missing association method" unless method
+
+          self.class_eval <<-EOS
+            def _ldap_add_#{assoc} obj
+              ldap_entry.#{ldap_attribute} += [obj.#{method}] unless obj.nil?
+              ldap_entry.save! unless ldap_entry.new_record? && self.class.ldap_options[:create]
+            end
+            after_add_for_#{assoc} << :_ldap_add_#{assoc}
+
+            def _ldap_remove_#{assoc} obj
+              ldap_entry.#{ldap_attribute} -= [obj.#{method}] unless obj.nil?
+              ldap_entry.save! unless ldap_entry.new_record? && self.class.ldap_options[:create]
+            end
+            after_remove_for_#{assoc} << :_ldap_remove_#{assoc}
+          EOS
+
+          # Ideally, we want also to add an after_update callback on the child class, to check
+          # for changes to the specified attribute and to propagate them to the ldap entry as well.
+          # However, we encounter the annoying problem that the scope for the callback is either
+          # the child object (if define_method used), or the parent *class* (if proc/lamdba used).
+          # I don't think we have a foolproof programmatic way of determining the parent object
+          # within the block. We could offload that responsibility by allowing ldap_backing() to
+          # take a proc or method wherein the person programming the AR models could do it themselves,
+          # but that's ugly. Luckily, we have not yet encountered a use case in our own systems that
+          # requires this.
+        end
+      end
+
       def _setup_ldap_create_callback
         before_create :_create_ldap_entry, :if => proc { self.ldap_entry.new_record? && self.errors.empty? }
       end
@@ -52,15 +107,20 @@ module LDAP::Model
         before_save :_autosave_ldap_attributes, :if => proc { self.errors.empty? }
       end
 
+      def _setup_ldap_destroy_callback
+        before_destroy :_destroy_ldap_entry, :if => proc { self.errors.empty? }
+      end
+
     module ModelMethods
       def ldap_entry
         @_ldap_entry ||= begin
           if new_record? || self.dn.blank?
-            self.dn = "CN=#{self.name},#{self.class.ldap_model.base.first}"
+            _cn = (self.respond_to?(:cn) ? self.cn : nil) || self.name
+            self.dn = "CN=#{_cn},#{self.class.ldap_model.base.first}" unless self.dn
           end
 
           entry = self.class.ldap_model.find(self.dn)
-          if entry.nil? && self.class.ldap_options[:create]
+          if entry.nil?
             entry = self.class.ldap_model.new(dn: self.dn)
           end
 
@@ -86,8 +146,16 @@ module LDAP::Model
       protected
         def _autosave_ldap_attributes
           self.class.ldap_options[:autosave].each do |attr|
-            next unless public_send("#{attr}_changed?")
-            ldap_entry.public_send("#{attr}=", public_send(attr))
+            ao = self.class.ldap_options[:associations]
+            if ao && ao[attr.to_sym]
+              # Construct new array from the sum of the AR association
+              # associations are array [ assoc-name, assoc-method ]
+              aa = ao[attr.to_sym]
+              ldap_entry.public_send "#{attr}=", public_send(aa[0]).all.map(&aa[1].to_sym)
+            else
+              next unless public_send("#{attr}_changed?")
+              ldap_entry.public_send("#{attr}=", public_send(attr))
+            end
           end
 
           ldap_entry.save! unless ldap_entry.new_record? && self.class.ldap_options[:create]
@@ -106,6 +174,10 @@ module LDAP::Model
         rescue Error => e
           errors.add(:ldap, e.message)
           raise ::ActiveRecord::RecordInvalid, self
+        end
+
+        def _destroy_ldap_entry
+          ldap_entry.destroy
         end
     end
 
