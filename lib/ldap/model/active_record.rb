@@ -183,13 +183,23 @@ module LDAP::Model
 
     # Call this from an initializer to disable LDAP connectivity from AR Models
     #
-    def self.disable!
-      %w[ ldap_backing ].each do |api|
-        ::ActiveRecord::Base.singleton_class.instance_eval { define_method(api) {|*|} }
+    class << self
+      def disable!
+        %w[ ldap_backing ].each do |api|
+          ::ActiveRecord::Base.singleton_class.instance_eval { define_method(api) {|*|} }
+        end
+
+        @disabled = true
       end
 
-      STDERR.puts "LDAP disabled. To test LDAP integration, define a `test' environment in #{Base.config_path}"
+      def disabled?
+        !!@disabled
+      end
     end
 
+  end
+
+  def self.disabled?
+    LDAP::Model::ActiveRecord.disabled?
   end
 end

@@ -33,8 +33,10 @@ module LDAP::Model
         LDAP::Model::Base.establish_connection(conf)
       rescue => e
         if Rails.env.test?
-          puts "LDAP connection disabled (#{e.to_s})"
+          $stderr.puts "** LDAP: connection disabled (#{conf}: #{e.to_s})."
+          $stderr.puts "** To test LDAP integration, define a valid `test' environment."
           LDAP::Model::ActiveRecord.disable!
+
         elsif e.is_a?(Errno::ENOENT)
           raise "LDAP configuration is missing, please create #{conf}"
         elsif e.is_a?(KeyError)
