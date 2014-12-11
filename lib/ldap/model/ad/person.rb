@@ -147,11 +147,15 @@ module LDAP::Model
     end
 
     def created_at
-      AD.asn1_to_time(self['whenCreated'])
+      if self['whenCreated']
+        AD.asn1_to_time(self['whenCreated'])
+      end
     end
 
     def updated_at
-      AD.asn1_to_time(self['whenChanged'])
+      if self['whenChanged']
+        AD.asn1_to_time(self['whenChanged'])
+      end
     end
 
     def locked_out?
