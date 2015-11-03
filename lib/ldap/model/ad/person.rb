@@ -18,6 +18,21 @@ module LDAP::Model
       badPwdCount
       badPasswordTime
       lockoutTime
+      telephoneNumber
+      roomNumber
+      mobile
+      otherMobile
+      otherMailbox
+      employeeType
+      employeeNumber
+      employeeID
+      division
+      targetAddress
+    ]
+
+    array_attributes %w[
+      memberOf
+      proxyAddresses
     ]
 
     computed_attributes %w[
@@ -97,7 +112,30 @@ module LDAP::Model
       :lockout_duration, :lockout_threshold, :lockout_observation_window,
       :to => :root
 
-    define_attribute_methods :expires_at => 'accountExpires'
+    define_attribute_methods(
+      # User attributes
+      :account_name     => 'sAMAccountName',
+      :email            => 'mail',
+      :first_name       => 'givenName',
+      :last_name        => 'sn',
+      :display_name     => 'displayName',
+      :room             => 'roomNumber',
+      :avatar           => 'thumbnailPhoto', # binary string representation of a JPEG photo
+
+      # organizationalPerson attributes
+      :employee_id      => 'employeeID',
+      :employee_type    => 'employeeType',
+      :employee_number  => 'employeeNumber',
+      :division         => 'division',
+
+      :personal_email   => 'otherMailbox',   # E-Mail address (Others)
+      :personal_mobile  => 'otherMobile',    # Mobile Phone (Others)
+      :official_phone   => 'telephoneNumber',
+      :official_mobile  => 'mobile',         # Official Mobile Phone
+      :expires_at       => 'accountExpires',
+
+      :member_of        => 'memberOf',
+    )
 
     def initialize_from(entry, options)
       super
