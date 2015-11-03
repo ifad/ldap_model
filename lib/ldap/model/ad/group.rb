@@ -88,7 +88,8 @@ module LDAP::Model
 
       super.tap do |a|
         a.update(
-          'objectClass' => %w( top group )
+          'objectClass' => %w( top group ),
+          'groupType'   => ADS_GROUP_TYPE_GLOBAL_GROUP.to_s
         )
       end
     end
