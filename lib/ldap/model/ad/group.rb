@@ -83,15 +83,12 @@ module LDAP::Model
       self['groupType'] = type.to_s
     end
 
-    def attributes
-      return super if persisted?
+    def initialize_from(entry, options)
+      super
+      return if persisted?
 
-      super.tap do |a|
-        a.update(
-          'objectClass' => %w( top group ),
-          'groupType'   => ADS_GROUP_TYPE_GLOBAL_GROUP.to_s
-        )
-      end
+      @attributes['objectClass']   = %w( top group )
+      @attributes['groupType'  ] ||= ADS_GROUP_TYPE_GLOBAL_GROUP.to_s
     end
   end
 end

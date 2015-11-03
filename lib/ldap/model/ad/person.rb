@@ -101,21 +101,19 @@ module LDAP::Model
 
     define_attribute_methods :expires_at => 'accountExpires'
 
-    def attributes
-      return super if persisted?
+    def initialize_from(entry, options)
+      super
+      return if persisted?
 
-      super.tap do |a|
-        a.update(
-          'userAccountControl' => '544', # Normal user + No password required
-          'objectClass'        => %w( top person organizationalPerson user ),
-          'userPrincipalName'  => [self.sAMAccountName, self.root.domain].join('@'),
-          'name'               => a.values_at('givenName', 'sn').join(' ').presence,
-        )
-        a['displayName'] ||= a['name']
-        a['mail']        ||= a['userPrincipalName']
+      @attributes['objectClass']          = %w( top person organizationalPerson user )
 
-        @cn = name
-      end
+      @attributes['userAccountControl'] ||= '544' # Normal user + No password required
+      @attributes['userPrincipalName' ] ||= [self.sAMAccountName, self.root.domain].join('@')
+      @attributes['name']               ||= @attributes.values_at('givenName', 'sn').join(' ').presence
+      @attributes['displayName']        ||= @attributes['name']
+      @attributes['mail']               ||= @attributes['userPrincipalName']
+
+      @cn = name
     end
 
     def principal
