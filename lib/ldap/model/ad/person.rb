@@ -2,7 +2,13 @@ module LDAP::Model
   class AD::Person < Base
     include AD::Timestamps
 
+    autoload :Avatar, 'ldap/model/ad/person/avatar'
+
     validates :sAMAccountName, :givenName, presence: true
+
+    binary_attributes %w[
+      thumbnailPhoto
+    ]
 
     string_attributes %w[
       givenName
@@ -150,6 +156,12 @@ module LDAP::Model
       @attributes['mail']               ||= @attributes['userPrincipalName']
 
       @cn = name
+    end
+
+    def avatar
+      if avatar = self['thumbnailPhoto']
+        Avatar.new(avatar, self.account_name)
+      end
     end
 
     def principal
