@@ -4,9 +4,31 @@ module LDAP::Model
 
     validates :cn, presence: true
 
-    string_attributes %w[ name description groupType ]
+    string_attributes %w[
+      name
+      description
+      groupType
+      mail
+      targetAddress
+      displayName
+      sAMAccountName
+    ]
 
-    array_attributes %w[ member ]
+    array_attributes %w[
+      member
+      proxyAddresses
+    ]
+
+    define_attribute_methods(
+      :name            => 'name',
+      :description     => 'description',
+      :mail            => 'mail',
+      :target_address  => 'targetAddress',
+      :proxy_addresses => 'proxyAddresses',
+      :display_name    => 'displayName',
+      :account_name    => 'sAMAccountName',
+      :members         => 'member',
+    )
 
     # AD Group Types
     ADS_GROUP_TYPE_GLOBAL_GROUP       = 0x00000002
