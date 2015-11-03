@@ -1,8 +1,6 @@
-require 'ldap/model/ad/timestamps'
-
 module LDAP::Model
   class AD::Group < Base
-    include LDAP::Model::AD::Timestamps
+    include AD::Timestamps
 
     validates :cn, presence: true
 

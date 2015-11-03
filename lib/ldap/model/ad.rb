@@ -3,9 +3,11 @@ require 'active_support/core_ext/time/zones'
 module LDAP::Model
   module AD
 
-    autoload :Group,  'ldap/model/ad/group'
-    autoload :Person, 'ldap/model/ad/person'
-    autoload :Root,   'ldap/model/ad/root'
+    autoload :Group,      'ldap/model/ad/group'
+    autoload :Person,     'ldap/model/ad/person'
+    autoload :Root,       'ldap/model/ad/root'
+
+    autoload :Timestamps, 'ldap/model/ad/timestamps'
 
     # Difference in seconds between the UNIX Epoch (1970-01-01)
     # and the Active Directory Epoch (1601-01-01)

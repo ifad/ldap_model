@@ -1,8 +1,6 @@
-require 'ldap/model/ad/timestamps'
-
 module LDAP::Model
   class AD::Person < Base
-    include LDAP::Model::AD::Timestamps
+    include AD::Timestamps
 
     validates :sAMAccountName, :givenName, presence: true
 
