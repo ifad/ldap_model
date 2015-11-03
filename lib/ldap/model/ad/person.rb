@@ -1,5 +1,8 @@
+require 'ldap/model/ad/timestamps'
+
 module LDAP::Model
   class AD::Person < Base
+    include LDAP::Model::AD::Timestamps
 
     validates :sAMAccountName, :givenName, presence: true
 
@@ -16,8 +19,6 @@ module LDAP::Model
       userAccountControl
       badPwdCount
       badPasswordTime
-      whenCreated
-      whenChanged
       lockoutTime
     ]
 
@@ -144,18 +145,6 @@ module LDAP::Model
     def password_expires_at
       return unless password_expires?
       password_changed_at + root.max_password_age
-    end
-
-    def created_at
-      if self['whenCreated']
-        AD.asn1_to_time(self['whenCreated'])
-      end
-    end
-
-    def updated_at
-      if self['whenChanged']
-        AD.asn1_to_time(self['whenChanged'])
-      end
     end
 
     def locked_out?

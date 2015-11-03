@@ -1,5 +1,9 @@
+require 'ldap/model/ad/timestamps'
+
 module LDAP::Model
   class AD::Group < Base
+    include LDAP::Model::AD::Timestamps
+
     validates :cn, presence: true
 
     string_attributes %w[ name description ]
