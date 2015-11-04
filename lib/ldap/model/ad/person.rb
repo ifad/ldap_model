@@ -82,11 +82,7 @@ module LDAP::Model
       # Find by sAMAccountName
       #
       def find_by_account(account_name)
-        base.each do |branch|
-          result = find_one(base: branch, filter: Net::LDAP::Filter.eq('sAMAccountName', account_name))
-          return result if result
-        end
-        nil
+        find_by(filter: Net::LDAP::Filter.eq('sAMAccountName', account_name))
       end
 
       # Validate the provided user credentials

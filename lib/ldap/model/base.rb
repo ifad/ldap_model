@@ -114,6 +114,14 @@ module LDAP::Model
       find(dn) || new(dn: dn)
     end
 
+    def self.find_by(options)
+      base.each do |branch|
+        result = find_one(options.merge(base: branch))
+        return result if result
+      end
+      nil
+    end
+
     def self.find_one(options)
       entry = search(options)
 
