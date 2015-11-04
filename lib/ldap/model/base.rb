@@ -110,6 +110,10 @@ module LDAP::Model
       find_one(options.merge(base: dn, scope: Net::LDAP::SearchScope_BaseObject))
     end
 
+    def self.find_or_initialize(dn)
+      find(dn) || new(dn: dn)
+    end
+
     def self.find_one(options)
       entry = search(options)
 
