@@ -80,6 +80,7 @@ module LDAP::Model
       end
 
       # Find by sAMAccountName
+      # FIXME DRY with Group
       #
       def find_by_account(account_name)
         find_by(filter: Net::LDAP::Filter.eq('sAMAccountName', account_name))

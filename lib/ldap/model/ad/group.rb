@@ -37,11 +37,19 @@ module LDAP::Model
     ADS_GROUP_TYPE_UNIVERSAL_GROUP    = 0x00000008
     ADS_GROUP_TYPE_SECURITY_ENABLED   = 0x80000000
 
-    def self.default_filter
-      only_groups = Net::LDAP::Filter.eq('objectClass', 'group')
-      with_cn     = Net::LDAP::Filter.pres('cn')
+    class << self
+      def default_filter
+        only_groups = Net::LDAP::Filter.eq('objectClass', 'group')
+        with_cn     = Net::LDAP::Filter.pres('cn')
 
-      only_groups & with_cn
+        only_groups & with_cn
+      end
+
+      # Find by sAMAccountName
+      # FIXME DRY with Person
+      def find_by_account(account_name)
+        find_by(filter: Net::LDAP::Filter.eq('sAMAccountName', account_name))
+      end
     end
 
     def type
