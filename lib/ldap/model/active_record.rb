@@ -19,18 +19,26 @@ module LDAP::Model
       end
 
       if ldap_options[:autosave].present?
+        callback_options = ldap_options[:autosave].extract_options!
+
         ldap_options[:autosave].map!(&:to_s)
         _check_ldap_autosave_attributes
-        _setup_ldap_autosave_callback
+
+        _setup_ldap_autosave_callback(callback_options)
       end
 
       if ldap_options[:create].present?
+        callback_options = ldap_options[:create].extract_options!
+
         ldap_options[:create].map!(&:to_s)
-        _setup_ldap_create_callback
+
+        _setup_ldap_create_callback(callback_options)
       end
 
       if ldap_options[:destroy]
-        _setup_ldap_destroy_callback
+        callback_options = ldap_options[:destroy].extract_options!
+
+        _setup_ldap_destroy_callback(callback_options)
       end
 
       ldap_options.freeze
@@ -101,16 +109,16 @@ module LDAP::Model
         end
       end
 
-      def _setup_ldap_create_callback
-        before_create :_create_ldap_entry
+      def _setup_ldap_autosave_callback(options)
+        before_save :_autosave_ldap_attributes, options
       end
 
-      def _setup_ldap_autosave_callback
-        before_save :_autosave_ldap_attributes
+      def _setup_ldap_create_callback(options)
+        before_create :_create_ldap_entry, options
       end
 
-      def _setup_ldap_destroy_callback
-        before_destroy :_destroy_ldap_entry
+      def _setup_ldap_destroy_callback(options)
+        before_destroy :_destroy_ldap_entry, options
       end
 
     module ModelMethods
