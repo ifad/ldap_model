@@ -29,7 +29,9 @@ module LDAP::Model
         _setup_ldap_create_callback
       end
 
-      _setup_ldap_destroy_callback
+      if ldap_options[:destroy]
+        _setup_ldap_destroy_callback
+      end
 
       ldap_options.freeze
     end
