@@ -100,15 +100,15 @@ module LDAP::Model
       end
 
       def _setup_ldap_create_callback
-        before_create :_create_ldap_entry, :if => proc { self.ldap_entry.new_record? && self.errors.empty? }
+        before_create :_create_ldap_entry
       end
 
       def _setup_ldap_autosave_callback
-        before_save :_autosave_ldap_attributes, :if => proc { self.errors.empty? }
+        before_save :_autosave_ldap_attributes
       end
 
       def _setup_ldap_destroy_callback
-        before_destroy :_destroy_ldap_entry, :if => proc { self.errors.empty? }
+        before_destroy :_destroy_ldap_entry
       end
 
     module ModelMethods
