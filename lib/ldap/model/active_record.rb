@@ -168,7 +168,7 @@ module LDAP::Model
             end
           end
 
-          ldap_entry.save! unless ldap_entry.new_record? && self.class.ldap_options[:create]
+          ldap_entry.save! unless ldap_entry.new_record? # Only the create callback creates new records
 
         rescue Error => e
           errors.add(:ldap, e.message)
