@@ -147,12 +147,22 @@ module LDAP::Model
       @attributes['objectClass']          = %w( top person organizationalPerson user )
 
       @attributes['userAccountControl'] ||= '544' # Normal user + No password required
-      @attributes['userPrincipalName' ] ||= [self.sAMAccountName, self.root.domain].join('@')
-      @attributes['name']               ||= @attributes.values_at('givenName', 'sn').join(' ').presence
-      @attributes['displayName']        ||= @attributes['name']
-      @attributes['mail']               ||= @attributes['userPrincipalName']
+    end
+
+    def attributes
+      return super if persisted?
 
       @cn = name
+
+      super.tap do |attrs|
+        attrs['userPrincipalName'] ||= [ self.sAMAccountName, self.root.domain].join('@')
+        attrs['displayName']       ||= name
+        attrs['mail']              ||= attrs['userPrincipalName']
+      end
+    end
+
+    def name
+      @attributes['name'] || @attributes.values_at('givenName', 'sn').join(' ').presence
     end
 
     def avatar
