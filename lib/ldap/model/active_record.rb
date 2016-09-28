@@ -41,6 +41,8 @@ module LDAP::Model
         _setup_ldap_destroy_callback(callback_options)
       end
 
+      ldap_options[:dn_source] = :name if ldap_options[:dn_source].blank?
+
       ldap_options.freeze
     end
 
@@ -63,13 +65,13 @@ module LDAP::Model
 
       def _check_ldap_association_attributes
         ldap_options[:associations].each do |ldap_attribute, assoc_a|
-          raise Error, "Invalid association :ldap_attribute for #{self.name}#ldap_backing: #{ldap_attribute}(is it defined in #{ldap_model}.define_attribute_methods?)" unless ldap_model.instance_methods.include? "#{ldap_attribute}=".to_sym
+          raise Error, "Invalid association :ldap_attribute for #{_dn_source}#ldap_backing: #{ldap_attribute}(is it defined in #{ldap_model}.define_attribute_methods?)" unless ldap_model.instance_methods.include? "#{ldap_attribute}=".to_sym
           assoc = self.reflect_on_association(assoc_a[0].to_sym)
-          raise Error, "Invalid association class name for #{self.name}#ldap_backing: #{assoc_a[0]}" unless assoc
-          raise Error, "LDAP backing is only supported for :has_many associations in #{self.name}#ldap_backing: #{assoc_a[0]}" unless assoc.macro == :has_many
+          raise Error, "Invalid association class name for #{_dn_source}#ldap_backing: #{assoc_a[0]}" unless assoc
+          raise Error, "LDAP backing is only supported for :has_many associations in #{_dn_source}#ldap_backing: #{assoc_a[0]}" unless assoc.macro == :has_many
           klass = assoc.klass
-          raise Error, "Invalid association class name for #{self.name}#ldap_backing: #{assoc_a[0]}" unless klass
-          raise Error, "Invalid assocation method for #{self.name}#ldap_backing: #{klass.name}.#{assoc_a[1]}" unless klass.instance_methods.include? assoc_a[1].to_sym
+          raise Error, "Invalid association class name for #{_dn_source}#ldap_backing: #{assoc_a[0]}" unless klass
+          raise Error, "Invalid assocation method for #{_dn_source}#ldap_backing: #{klass.name}.#{assoc_a[1]}" unless klass.instance_methods.include? assoc_a[1].to_sym
         end
       end
 
@@ -125,7 +127,7 @@ module LDAP::Model
       def ldap_entry
         @_ldap_entry ||= begin
           if new_record? || self.dn.blank?
-            _cn = (self.respond_to?(:cn) ? self.cn : nil) || self.name
+            _cn = (self.respond_to?(:cn) ? self.cn : nil) || _dn_source
             self.dn = "CN=#{_cn},#{self.class.ldap_model.base.first}" unless self.dn
           end
 
@@ -189,6 +191,13 @@ module LDAP::Model
         def _destroy_ldap_entry
           ldap_entry.destroy
         end
+
+        def _dn_source
+          @_dn_source ||= self.send(self.class.ldap_options[:dn_source])
+        rescue NoMethodError
+          raise Error, "The #{self} model do not respond to `#{self.class.ldap_options[:dn_source]}`. Please configure it on `ldap_backing` through the `dn_source` option"
+        end
+
     end
 
     # Call this from an initializer to disable LDAP connectivity from AR Models
