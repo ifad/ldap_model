@@ -1,7 +1,5 @@
 module LDAP::Model
   class AD::Root < Base
-    base connection.base
-
     string_attributes [
       'name',
 
