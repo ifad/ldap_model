@@ -83,6 +83,7 @@ module LDAP::Model
 
       options[:scope]      ||= scope
       options[:attributes] ||= attributes
+      options[:connection] ||= connection
 
       if options[:filter].present?
         options[:filter] &= default_filter
@@ -91,7 +92,7 @@ module LDAP::Model
       end
 
       instrument(:search, options) do |event|
-        (connection.search(options) || []).tap do |result|
+        (options[:connection].search(options) || []).tap do |result|
           unless raw_entry
             result.map! {|entry| new(entry, :persisted => true)}
           end

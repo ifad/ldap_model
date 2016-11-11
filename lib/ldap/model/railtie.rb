@@ -26,25 +26,25 @@ module LDAP::Model
     # to allow an application to mock everything out in tests.
     #
     initializer 'ldap_model.connect' do
-      conf = Pathname('config/ldap.yml')
+      # conf = Pathname('config/ldap.yml')
 
-      begin
-        conf = YAML.load(conf.read).fetch(Rails.env)
-        LDAP::Model::Base.establish_connection(conf)
-      rescue => e
-        if Rails.env.test?
-          $stderr.puts "** LDAP: connection disabled (#{conf}: #{e.to_s})."
-          $stderr.puts "** To test LDAP integration, define a valid `test' environment."
-          LDAP::Model::ActiveRecord.disable!
+      # begin
+      #   conf = YAML.load(conf.read).fetch(Rails.env)
+      #   LDAP::Model::Base.establish_connection(conf)
+      # rescue => e
+      #   if Rails.env.test?
+      #     $stderr.puts "** LDAP: connection disabled (#{conf}: #{e.to_s})."
+      #     $stderr.puts "** To test LDAP integration, define a valid `test' environment."
+      #     LDAP::Model::ActiveRecord.disable!
 
-        elsif e.is_a?(Errno::ENOENT)
-          raise "LDAP configuration is missing, please create #{conf}"
-        elsif e.is_a?(KeyError)
-          raise "LDAP configuration for environment `#{Rails.env}' was not found in #{conf}"
-        else
-          raise
-        end
-      end
+      #   elsif e.is_a?(Errno::ENOENT)
+      #     raise "LDAP configuration is missing, please create #{conf}"
+      #   elsif e.is_a?(KeyError)
+      #     raise "LDAP configuration for environment `#{Rails.env}' was not found in #{conf}"
+      #   else
+      #     raise
+      #   end
+      # end
     end
 
     config.after_initialize do
