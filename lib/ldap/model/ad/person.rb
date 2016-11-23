@@ -3,14 +3,14 @@ module LDAP::Model
     include AD::Timestamps
 
     autoload :Avatar, 'ldap/model/ad/person/avatar'
-    validates :givenName, presence: true
+
+    validates :sAMAccountName, :givenName, presence: true
 
     binary_attributes %w[
       thumbnailPhoto
     ]
 
     string_attributes %w[
-      uid
       givenName
       sn
       name
@@ -117,7 +117,6 @@ module LDAP::Model
 
     define_attribute_methods(
       # User attributes
-      :uid              => 'uid',
       :account_name     => 'sAMAccountName',
       :email            => 'mail',
       :first_name       => 'givenName',
