@@ -22,7 +22,7 @@ module LDAP::Model
         callback_options = ldap_options[:autosave].extract_options!
 
         ldap_options[:autosave].map!(&:to_s)
-        _check_ldap_autosave_attributes
+        _check_ldap_autosave_attributes unless instance_dependant_ldap_model?
 
         _setup_ldap_autosave_callback(callback_options)
       end
@@ -46,8 +46,21 @@ module LDAP::Model
       ldap_options.freeze
     end
 
-    def ldap_model
-      @_ldap_model
+    def ldap_model(instance = nil)
+      if instance_dependant_ldap_model?
+        raise ArgumentError, "Not supported on instance-dependant backings" unless instance
+        instance_dependant_ldap_model(instance)
+      else
+        @_ldap_model
+      end
+    end
+
+    def instance_dependant_ldap_model?
+      @_ldap_model.respond_to?(:call)
+    end
+
+    def instance_dependant_ldap_model(instance)
+      @_ldap_model.call(instance)
     end
 
     def ldap_options
@@ -128,12 +141,12 @@ module LDAP::Model
         @_ldap_entry ||= begin
           if new_record? || self.dn.blank?
             _cn = (self.respond_to?(:cn) ? self.cn : nil) || _dn_source
-            self.dn = "CN=#{_cn},#{self.class.ldap_model.base.first}" unless self.dn
+            self.dn = "CN=#{_cn},#{self.class.ldap_model(self).base.first}" unless self.dn
           end
 
-          entry = self.class.ldap_model.find(self.dn)
+          entry = self.class.ldap_model(self).find(self.dn)
           if entry.nil?
-            entry = self.class.ldap_model.new(dn: self.dn)
+            entry = self.class.ldap_model(self).new(dn: self.dn)
           end
 
           entry
@@ -143,8 +156,8 @@ module LDAP::Model
       # Useful for LDAP imports
       #
       def ldap_entry=(entry)
-        unless entry.is_a? self.class.ldap_model
-          raise Error, "Invalid entry type: #{entry.class}, #{self.class.ldap_model.class} expected"
+        unless entry.is_a? self.class.ldap_model(self)
+          raise Error, "Invalid entry type: #{entry.class}, #{self.class.ldap_model(self)} expected"
         end
 
         @_ldap_entry = entry
