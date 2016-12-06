@@ -2,7 +2,7 @@ require 'net/ldap'
 
 require 'active_support/notifications'
 
-require 'active_model/dirty'
+require 'active_model'
 
 require 'ldap/model/instrumentation'
 require 'ldap/model/error'
@@ -206,7 +206,7 @@ module LDAP::Model
 
       def define_attribute_methods(attributes)
         attributes.each do |method, attr|
-          unless attr.in?(self.attributes)
+          unless self.attributes.include?(attr)
             raise Error, "unknown attribute #{attr}"
           end
 
@@ -214,7 +214,7 @@ module LDAP::Model
           define_method(method) { self[attr] }
 
           # Writer
-          writer = attr.in?(self.binary_attributes) ?
+          writer = self.binary_attributes.include?(attr) ?
             proc {|val| self[attr] = val ? val.force_encoding('binary') : val} :
             proc {|val| self[attr] = val}
 
