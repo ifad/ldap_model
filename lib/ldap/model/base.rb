@@ -253,7 +253,7 @@ module LDAP::Model
       @attributes = self.class.attributes.inject({}) do |h, attr|
 
         value = Array.wrap(entry[attr]).reject(&:blank?).each do |v|
-          v.force_encoding(attr.in?(self.class.binary_attributes) ? 'binary' : 'utf-8')
+          v.force_encoding(self.class.binary_attributes.include?(attr) ? 'binary' : 'utf-8')
         end
 
         h.update(attr => value.size < 2 ? value.first : value)
@@ -341,7 +341,7 @@ module LDAP::Model
 
     def [](attr)
       value = @attributes.fetch(attr)
-      if attr.in?(self.class.array_attributes)
+      if self.class.array_attributes.include?(attr)
         value = Array.wrap(value)
       end
       return value
@@ -349,20 +349,20 @@ module LDAP::Model
 
     def []=(attr, value)
       if value.present?
-        value = if attr.in?(self.class.array_attributes)
+        value = if self.class.array_attributes.include?(attr)
           Array.wrap(value)
         else
           value.to_s
         end
 
-        if attr.in?(self.class.binary_attributes)
+        if self.class.binary_attributes.include?(attr)
           value = value.force_encoding('binary')
         end
       else
         value = nil
       end
 
-      changed = if attr.in?(self.class.array_attributes)
+      changed = if self.class.array_attributes.include?(attr)
         Array.wrap(value).to_set != self[attr].to_set
       else
         value != self[attr]
@@ -401,7 +401,7 @@ module LDAP::Model
 
     def loggable_changes
       changes.inject({}) do |ret, (attr, change)|
-        if attr.in?(self.class.binary_attributes)
+        if self.class.binary_attributes.include?(attr)
           change = change.map {|x| x.present? ? "[BINARY SHA:#{Digest::SHA1.hexdigest(x)}]" : ''}
         end
 
@@ -419,7 +419,7 @@ module LDAP::Model
           name, setter = m[1], m[2].present?
         end
 
-        if name.nil? || !name.in?(self.class.attributes)
+        if name.nil? || !self.class.attributes.include?(name)
           return super
         end
 
