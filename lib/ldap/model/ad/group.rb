@@ -12,6 +12,8 @@ module LDAP::Model
       targetAddress
       displayName
       sAMAccountName
+      managedBy
+      extensionAttribute12
     ]
 
     array_attributes %w[
@@ -28,6 +30,7 @@ module LDAP::Model
       :display_name    => 'displayName',
       :account_name    => 'sAMAccountName',
       :members         => 'member',
+      :managed_by      => 'managedBy'
     )
 
     # AD Group Types
@@ -109,6 +112,10 @@ module LDAP::Model
 
     def type_id=(type)
       self['groupType'] = type.to_s
+    end
+
+    def block_external?
+      self['extensionAttribute12'] == 'BLOCK_EXTERNAL'
     end
 
     def initialize_from(entry, options)
