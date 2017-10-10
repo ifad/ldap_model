@@ -1,6 +1,7 @@
 require 'net/ldap'
 
 require 'active_support/notifications'
+require 'active_support/core_ext/array'
 
 require 'active_model'
 
