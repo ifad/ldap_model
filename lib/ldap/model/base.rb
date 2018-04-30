@@ -108,9 +108,10 @@ module LDAP::Model
     end
 
     def self.find(dn, options = {})
-      dn ||= config['base']
+      raise Error, "Cannot .find with blank dn (#{dn.inspect})" if dn.blank?
+
       dn = dn.dup.force_encoding('binary')
-      find_one(options.merge( base: dn, scope: Net::LDAP::SearchScope_BaseObject))
+      find_one(options.merge(base: dn, scope: Net::LDAP::SearchScope_BaseObject))
     end
 
     def self.find_or_initialize(dn)
