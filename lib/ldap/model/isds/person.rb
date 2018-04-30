@@ -15,11 +15,10 @@ module LDAP::Model
       def filter_only_person
         Net::LDAP::Filter.eq('objectClass', 'person')
       end
-    end
 
-    # AD Root settings
-    def root
-      @root ||= self.class.root
+      def find_by_account(account_name)
+        find_by(filter: Net::LDAP::Filter.eq('uid', account_name))
+      end
     end
 
     define_attribute_methods(
@@ -35,27 +34,25 @@ module LDAP::Model
       super
       return if persisted?
 
-      @attributes['objectClass']          = %w( top person organizationalPerson user )
-      @attributes['userAccountControl'] ||= '544' # Normal user + No password required
-
+      @attributes['objectClass'] = %w( top person organizationalperson inetorgperson )
     end
 
     def attributes
       return super if persisted?
 
       @cn = name
+    end
 
-      super.tap do |attrs|
-        attrs['displayName']       ||= name
+    def uid
+      if (uid = self['uid']).kind_of?(Array)
+        uid.find {|x| self.dn.include?(x) }
+      else
+        uid
       end
     end
 
     def name
-      @attributes['name'] || @attributes.values_at('givenName', 'sn').join(' ').presence
-    end
-
-    def account_flags
-      self['userAccountControl'].to_i
+      @attributes['displayName'] || @attributes.values_at('givenName', 'sn').join(' ').presence
     end
 
   end
