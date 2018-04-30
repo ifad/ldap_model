@@ -26,7 +26,8 @@ module LDAP::Model
       :target_address  => 'targetAddress',
       :proxy_addresses => 'proxyAddresses',
       :display_name    => 'displayName',
-      :account_name    => 'sAMAccountName'
+      :account_name    => 'sAMAccountName',
+      :members         => 'member',
     )
 
     # AD Group Types
