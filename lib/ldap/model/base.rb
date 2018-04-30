@@ -1,6 +1,7 @@
 require 'net/ldap'
 
 require 'active_support/notifications'
+require 'active_support/core_ext/array'
 
 require 'active_model'
 
@@ -107,6 +108,8 @@ module LDAP::Model
     end
 
     def self.find(dn, options = {})
+      raise Error, "Cannot .find with blank dn (#{dn.inspect})" if dn.blank?
+
       dn = dn.dup.force_encoding('binary')
       find_one(options.merge(base: dn, scope: Net::LDAP::SearchScope_BaseObject))
     end

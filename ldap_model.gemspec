@@ -15,6 +15,6 @@ Gem::Specification.new do |gem|
   gem.require_paths = %w( lib )
   gem.version       = LDAP::Model::VERSION
 
-  gem.add_dependency 'net-ldap' #The client app should use github master
-  gem.add_dependency 'activemodel', '>= 3.2'
+  gem.add_dependency 'net-ldap', '>= 0.16.0'
+  gem.add_dependency 'activemodel', '>= 3.2', '< 5.0'
 end
