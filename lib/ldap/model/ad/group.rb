@@ -12,6 +12,7 @@ module LDAP::Model
       targetAddress
       displayName
       sAMAccountName
+      managedBy
     ]
 
     array_attributes %w[
@@ -28,6 +29,7 @@ module LDAP::Model
       :display_name    => 'displayName',
       :account_name    => 'sAMAccountName',
       :members         => 'member',
+      :managed_by      => 'managedBy',
     )
 
     # AD Group Types
