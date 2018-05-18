@@ -255,8 +255,8 @@ module LDAP::Model
       @cn = dn.match(/^cn=(.+?),/i) { $1 }
       @attributes = self.class.attributes.inject({}) do |h, attr|
 
-        value = Array.wrap(entry[attr]).reject(&:blank?).each do |v|
-          v.force_encoding(self.class.binary_attributes.include?(attr) ? 'binary' : 'utf-8')
+        value = Array.wrap(entry[attr]).reject(&:blank?).map do |v|
+          v.to_s.force_encoding(self.class.binary_attributes.include?(attr) ? 'binary' : 'utf-8')
         end
 
         h.update(attr => value.size < 2 ? value.first : value)
