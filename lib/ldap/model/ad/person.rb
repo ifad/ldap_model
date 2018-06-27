@@ -34,6 +34,9 @@ module LDAP::Model
       employeeID
       division
       targetAddress
+      c
+      co
+      l
     ]
 
     array_attributes %w[
@@ -138,6 +141,10 @@ module LDAP::Model
       :expires_at       => 'accountExpires',
 
       :member_of        => 'memberOf',
+
+      :country_code     => 'c',
+      :country_name     => 'co',
+      :city             => 'l',
     )
 
     def initialize_from(entry, options)
