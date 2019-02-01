@@ -72,7 +72,7 @@ module LDAP::Model
     end
 
     def self.inherited(subclass)
-      %w( @connection @base @scope ).each do |ivar|
+      %w( @connection @base @scope @default_filter ).each do |ivar|
         subclass.instance_variable_set(ivar, instance_variable_get(ivar))
       end
     end
@@ -109,9 +109,9 @@ module LDAP::Model
 
     def self.default_filter(&block)
       if block
-        @_default_filter = block.call
+        @default_filter = block.call
       else
-        @_default_filter ||= Net::LDAP::Filter.eq('objectClass', '*').freeze
+        @default_filter ||= Net::LDAP::Filter.eq('objectClass', '*').freeze
       end
     end
 

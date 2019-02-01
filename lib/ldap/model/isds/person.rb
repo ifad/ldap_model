@@ -11,11 +11,11 @@ module LDAP::Model
       mail
     ]
 
-    class << self
-      def filter_only_person
-        Net::LDAP::Filter.eq('objectClass', 'person')
-      end
+    default_filter do
+      Net::LDAP::Filter.eq('objectClass', 'person')
+    end
 
+    class << self
       def find_by_account(account_name)
         find_by(filter: Net::LDAP::Filter.eq('uid', account_name))
       end
