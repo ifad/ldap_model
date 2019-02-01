@@ -105,8 +105,12 @@ module LDAP::Model
       end
     end
 
-    def self.default_filter
-      Net::LDAP::Filter.eq('objectClass', '*')
+    def self.default_filter(&block)
+      if block
+        @_default_filter = block.call
+      else
+        @_default_filter ||= Net::LDAP::Filter.eq('objectClass', '*').freeze
+      end
     end
 
     def self.find(dn, options = {})

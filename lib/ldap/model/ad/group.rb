@@ -4,6 +4,13 @@ module LDAP::Model
 
     validates :cn, presence: true
 
+    default_filter do
+      only_groups = Net::LDAP::Filter.eq('objectClass', 'group')
+      with_cn     = Net::LDAP::Filter.pres('cn')
+
+      only_groups & with_cn
+    end
+
     string_attributes %w[
       name
       description
@@ -40,13 +47,6 @@ module LDAP::Model
     ADS_GROUP_TYPE_SECURITY_ENABLED   = 0x80000000
 
     class << self
-      def default_filter
-        only_groups = Net::LDAP::Filter.eq('objectClass', 'group')
-        with_cn     = Net::LDAP::Filter.pres('cn')
-
-        only_groups & with_cn
-      end
-
       # Find by sAMAccountName
       # FIXME DRY with Person
       def find_by_account(account_name)
