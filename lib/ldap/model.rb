@@ -2,6 +2,7 @@ module LDAP
   module Model
     autoload :AD,              'ldap/model/ad'
     autoload :ISDS,            'ldap/model/isds'
+    autoload :ISAM,            'ldap/model/isam'
     autoload :Base,            'ldap/model/base'
     autoload :ActiveRecord,    'ldap/model/active_record'
     autoload :Instrumentation, 'ldap/model/instrumentation'

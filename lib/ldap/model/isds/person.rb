@@ -19,6 +19,10 @@ module LDAP::Model
       def find_by_account(account_name)
         find_by(filter: Net::LDAP::Filter.eq('uid', account_name))
       end
+
+      def find_by_email(email)
+        find_by(filter: Net::LDAP::Filter.eq('mail', email))
+      end
     end
 
     define_attribute_methods(
