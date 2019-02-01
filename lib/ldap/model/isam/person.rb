@@ -9,8 +9,21 @@ module LDAP::Model
     # Define new subclasses so not to pollute the base ones with
     # the connection and configuration happening via this class.
     #
-    class DelegatePerson  < ISDS::Person;  end
-    class DelegateAccount < ISAM::Account; end
+    def self.person_class
+      @_person_class ||= Class.new(ISDS::Person).tap {|c| const_set(:DelegatePerson, c) }
+    end
+
+    def self.account_class
+      @_account_class ||= Class.new(ISAM::Account).tap {|c| const_set(:DelegateAccount, c) }
+    end
+
+    # Clear accessory subclasses on inheritance.
+    #
+    def self.inherited(subclass)
+      %w( @_person_class @_account_class ).each do |ivar|
+        subclass.instance_variable_set(ivar, nil)
+      end
+    end
 
     # Establish connection on both trees. These could be separate servers
     # however it has been always seen in the same one. If one day support
@@ -22,13 +35,19 @@ module LDAP::Model
       end
 
       # Connect ISDS tree
-      DelegatePerson.establish_connection(config.dup)
+      person_class.establish_connection(config.dup)
 
       # Connect ISAM tree
-      DelegateAccount.establish_connection(config.dup)
-      DelegateAccount.base "cn=Users,secAuthority=#{config['secAuthority']}"
+      account_class.establish_connection(config.dup)
+      account_class.base "cn=Users,secAuthority=#{config['secAuthority']}"
 
       true
+    end
+
+    # Return true if both branches are connected.
+    #
+    def self.connected?
+      person_class.connected? && account_class.connected?
     end
 
     # And now for the crazy ones - some metaprogramming to be DRY.
@@ -39,11 +58,33 @@ module LDAP::Model
       # use the fancy ball of eval'ed code in ActiveSupport, complicating
       # debugging and troubleshooting.
       #
-      def delegate_method(name, options)
+      def delegate_class_method(name, options)
         to = options.fetch(:to)
 
-        define_method(name) do |*args, &block|
-          to.public_send(name, *args, &block)
+        define_class_method(name) do |*args, &block|
+          send(to).public_send(name, *args, &block)
+        end
+      end
+
+      # Delegate class methods with person/account association. The starting
+      # point is always the +person_class+. Then, depending on the number of
+      # people to associate, two different strategies are selected.
+      #
+      def association_class_method(name, options)
+        to   = options.fetch(:to)
+        with = options.fetch(:with)
+
+        define_class_method(name) do |*args, &block|
+          associate(send(to).public_send(name, *args, &block), send(with))
+        end
+      end
+
+      # Return error for read/write LDAP Model APIs, as the ISAM tree cannot
+      # be written to.
+      #
+      def error_class_method(name)
+        define_class_method(name) do |*args, &block|
+          raise Error, "#{name} can't be implemented as ISAM is read-only"
         end
       end
 
@@ -54,9 +95,9 @@ module LDAP::Model
       # +ActiveModel::Dirty+ - as these instances are read-only.
       #
       def delegate_public_instance_methods(options)
-        klass = options.fetch(:from)
+        from = options.fetch(:from)
 
-        methods = (klass.public_instance_methods - Object.methods).
+        methods = (send(from).public_instance_methods - Object.methods).
           reject {|m| m =~ /(?:=|!|_changed\?|change|_will_change|_was)$/}
 
         target = options.fetch(:to)
@@ -73,28 +114,6 @@ module LDAP::Model
 
             instance.public_send(method, *args, &block)
           end
-        end
-      end
-
-      # Delegate class methods with person/account association. The starting
-      # point is always the DelegatePerson. Then, depending on the number of
-      # people to associate, two different strategies are selected.
-      #
-      def association_method(name, options)
-        to   = options.fetch(:to)
-        with = options.fetch(:with)
-
-        define_method(name) do |*args, &block|
-          associate(to.public_send(name, *args, &block), with)
-        end
-      end
-
-      # Return error for read/write LDAP Model APIs, as the ISAM tree cannot
-      # be written to.
-      #
-      def error_method(name)
-        define_method(name) do |*args, &block|
-          raise Error, "#{name} can't be implemented as ISAM is read-only"
         end
       end
 
@@ -146,41 +165,42 @@ module LDAP::Model
             new(person, account)
           end
         end
-    end
 
-    class << self
-      extend DSL
-
-      # Delegate class methods
-      delegate_method :base,               to: DelegatePerson
-      delegate_method :scope,              to: DelegatePerson
-      delegate_method :default_filter,     to: DelegatePerson
-
-      # Delegate class methods to the DelegatePerson adding associations with
-      # the accounts information
-      association_method :find_by_account, to: DelegatePerson, with: DelegateAccount
-      association_method :find_by_email,   to: DelegatePerson, with: DelegateAccount
-      association_method :all,             to: DelegatePerson, with: DelegateAccount
-      association_method :search,          to: DelegatePerson, with: DelegateAccount
-      association_method :find,            to: DelegatePerson, with: DelegateAccount
-      association_method :find_by,         to: DelegatePerson, with: DelegateAccount
-      association_method :find_one,        to: DelegatePerson, with: DelegateAccount
-
-      # These can't be implemented as nothing can be written to the accounts
-      # branch - so return an LDAP::Model::Error
-      error_method :find_or_initialize
-      error_method :modify
-      error_method :add
-      error_method :delete
-      error_method :bind
+        # Utility to be DRY.
+        def define_class_method(name, &code)
+          singleton_class.instance_eval { define_method(name, &code) }
+        end
     end
 
     extend DSL
 
+    # Delegate class methods
+    delegate_class_method :base,               to: :person_class
+    delegate_class_method :scope,              to: :person_class
+    delegate_class_method :default_filter,     to: :person_class
+
+    # Delegate class methods to the +person_class+ adding associations with
+    # the accounts information
+    association_class_method :find_by_account, to: :person_class, with: :account_class
+    association_class_method :find_by_email,   to: :person_class, with: :account_class
+    association_class_method :all,             to: :person_class, with: :account_class
+    association_class_method :search,          to: :person_class, with: :account_class
+    association_class_method :find,            to: :person_class, with: :account_class
+    association_class_method :find_by,         to: :person_class, with: :account_class
+    association_class_method :find_one,        to: :person_class, with: :account_class
+
+    # These can't be implemented as nothing can be written to the accounts
+    # branch - so return an LDAP::Model::Error
+    error_class_method :find_or_initialize
+    error_class_method :modify
+    error_class_method :add
+    error_class_method :delete
+    error_class_method :bind
+
     # Delegate selected public instance methods from the given class to the
     # given instance variable.
-    delegate_public_instance_methods from: DelegateAccount, to: :@account
-    delegate_public_instance_methods from: DelegatePerson,  to: :@person
+    delegate_public_instance_methods from: :account_class, to: :@account
+    delegate_public_instance_methods from: :person_class,  to: :@person
 
     def initialize(person, account)
       @person = person
