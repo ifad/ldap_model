@@ -2,6 +2,7 @@ require 'net/ldap'
 
 require 'active_support/notifications'
 require 'active_support/core_ext/array'
+require 'active_support/core_ext/object' # try
 
 require 'active_model'
 
@@ -42,7 +43,6 @@ module LDAP::Model
 
       instrument(:connect, :url => url) do
         @connection = Net::LDAP.new(
-          base:       config['base'],
           host:       config['hostname'],
           port:       config['port'].to_i,
           encryption: config['encryption'],
@@ -58,6 +58,8 @@ module LDAP::Model
           @connection = nil
           raise Error, reason
         end
+
+        base config['base'] if config['base'].present?
       end
 
       true
@@ -210,7 +212,11 @@ module LDAP::Model
       end
 
       def base(base = nil)
-        @base ||= Array.wrap(base)
+        if base
+          @base = Array.wrap(base)
+        else
+          @base || []
+        end
       end
 
       def define_attribute_methods(attributes)
