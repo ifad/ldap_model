@@ -331,7 +331,12 @@ module LDAP::Model
       changes = self.changes
       @previously_changed = self.changes
 
-      ret = block.call(changes)
+      ret = if self.class.config['readonly']
+        puts "LDAP read-only, skipping save on #{self.dn} of #{self.changes.to_json}"
+        true
+      else
+        block.call(changes)
+      end
 
       @changed_attributes.clear
       @persisted = true
