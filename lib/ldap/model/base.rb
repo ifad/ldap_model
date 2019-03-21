@@ -331,7 +331,7 @@ module LDAP::Model
       changes = self.changes
       @previously_changed = self.changes
 
-      ret = if config['readonly']
+      ret = if self.class.config['readonly']
         puts "LDAP read-only, skipping save on #{self.dn} of #{self.changes.to_json}"
         true
       else
