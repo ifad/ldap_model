@@ -306,7 +306,7 @@ module LDAP::Model
         end
         success, message = self.class.modify(dn, loggable_changes, operations)
 
-        raise Error, "Save failed: #{message}" unless success
+        raise Error, "LDAP save failed: #{message}" unless success
       end
 
       return true
@@ -321,7 +321,7 @@ module LDAP::Model
     def create!
       persisting do
         success, message = self.class.add(dn, attributes.merge('cn' => cn))
-        raise Error, "Create failed: #{message}" unless success
+        raise Error, "LDAP create failed: #{message}" unless success
       end
 
       return true
