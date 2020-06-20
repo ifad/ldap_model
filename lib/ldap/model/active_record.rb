@@ -6,7 +6,7 @@ module LDAP::Model
     def ldap_backing(model, options = {})
       include ModelMethods
 
-      unless self.column_names.include?('dn')
+      if self.table_exists? && !self.column_names.include?('dn')
         raise Error, "The #{self} model must have a 'dn' attribute containing the linked LDAP dn"
       end
 
