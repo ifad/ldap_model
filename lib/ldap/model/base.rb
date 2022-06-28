@@ -188,7 +188,7 @@ module LDAP::Model
 
     class << self
       # Minimal DSL
-      %w( string array binary computed ).each do |type|
+      %w( string array binary computed boolean ).each do |type|
         module_eval <<-RUBY, __FILE__, __LINE__+1
           def #{type}_attributes(list=nil)
             @#{type}_attributes ||= superclass.respond_to?(:#{type}_attributes) ?
@@ -200,7 +200,11 @@ module LDAP::Model
       end
 
       def attributes
-        @attributes ||= (string_attributes | binary_attributes | array_attributes)
+        @attributes ||= (string_attributes | binary_attributes | array_attributes | boolean_attributes)
+      end
+
+      def inspectable_attributes
+        (string_attributes | boolean_attributes)
       end
 
       def export_attributes
@@ -226,7 +230,13 @@ module LDAP::Model
           end
 
           # Reader
-          define_method(method) { self[attr] }
+          define_method(method) do
+            if self.boolean_attributes.include?(attr)
+              self[attr].to_s.downcase == 'true'
+            else
+              self[attr]
+            end
+          end
 
           # Writer
           writer = self.binary_attributes.include?(attr) ?
@@ -300,9 +310,9 @@ module LDAP::Model
 
       persisting do |changes|
         # Build the operations array
-        operations = changes.inject([]) do |ops, (attr, (old, new))|
-          op = if old.nil? then :add elsif new.nil? then :delete else :replace end
-          ops << [op, attr, new]
+        operations = changes.inject([]) do |ops, (attr, (old_val, new_val))|
+          op = if old_val.nil? then :add elsif new_val.nil? then :delete else :replace end
+          ops << [op, attr, new_val]
         end
         success, message = self.class.modify(dn, loggable_changes, operations)
 
@@ -326,6 +336,11 @@ module LDAP::Model
 
       return true
     end
+
+    def changes
+      normalize_changes(super)
+    end
+
 
     def persisting(&block)
       changes = self.changes
@@ -396,8 +411,14 @@ module LDAP::Model
 
     protected :[], :[]=
 
+    def boolean_attributes
+      self.class.boolean_attributes
+    end
+
+    protected :boolean_attributes
+
     def inspect
-      attrs = self.class.string_attributes.inject([]) {|l,a| l << [a, self[a].inspect].join(': ')}
+      attrs = self.class.inspectable_attributes.inject([]) {|l,a| l << [a, self[a].inspect].join(': ')}
       %[#<#{self.class.name} dn: #@dn", #{attrs.join(', ')}>]
     end
 
@@ -449,7 +470,20 @@ module LDAP::Model
           self[name]
         end
       end
+    private
 
+    def normalize_changes(changes)
+      # Set boolean attributes according to LDAP standard
+      changes.inject({}) do |res, (attr_name, ary)|
+        res[attr_name] = if boolean_attributes.include?(attr_name)
+          ary.map {|change| change.to_s.downcase == 'true' ? 'TRUE' : 'FALSE' }
+        else
+          ary
+        end
+
+        res
+      end
+    end
   end
 
 end
