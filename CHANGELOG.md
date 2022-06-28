@@ -1,3 +1,7 @@
+# 1.1.2
+
+* Feature: Handling Boolean Attributes
+
 # 1.0.0
 
 * Feature: Add support for WebSEAL/IBM ISAM.
