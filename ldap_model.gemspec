@@ -16,5 +16,5 @@ Gem::Specification.new do |gem|
   gem.version       = LDAP::Model::VERSION
 
   gem.add_dependency 'net-ldap', '>= 0.16.0'
-  gem.add_dependency 'activemodel', '>= 3.2', '< 5.0'
+  gem.add_dependency 'activemodel', '>= 3.2'
 end
